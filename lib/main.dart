@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'services/github_service.dart';
 import 'services/project_service.dart';
 import 'theme/app_themes.dart';
 import 'screens/auth_screen.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const DevDashApp());
 }
 
@@ -28,11 +30,11 @@ class DevDashApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Dev Dash',
+        title: 'CrypticDash',
         debugShowCheckedModeBanner: false,
         theme: AppThemes.lightTheme,
         darkTheme: AppThemes.darkTheme,
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.system, // This will automatically switch between light/dark based on system preference
         home: const AuthScreen(),
       ),
     );

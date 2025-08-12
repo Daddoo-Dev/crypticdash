@@ -16,6 +16,9 @@ class ProjectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -24,6 +27,7 @@ class ProjectTile extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Project Header
               Row(
@@ -33,6 +37,7 @@ class ProjectTile extends StatelessWidget {
                       project.name,
                       style: AppThemes.titleLarge.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -59,14 +64,14 @@ class ProjectTile extends StatelessWidget {
                   Icon(
                     Icons.account_circle,
                     size: 16,
-                    color: AppThemes.neutralGrey,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       project.owner,
                       style: AppThemes.bodyMedium.copyWith(
-                        color: AppThemes.neutralGrey,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -81,7 +86,9 @@ class ProjectTile extends StatelessWidget {
               if (project.description.isNotEmpty) ...[
                 Text(
                   project.description,
-                  style: AppThemes.bodyMedium,
+                  style: AppThemes.bodyMedium.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -97,12 +104,15 @@ class ProjectTile extends StatelessWidget {
                     children: [
                       Text(
                         'Progress',
-                        style: AppThemes.labelLarge,
+                        style: AppThemes.labelLarge.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
                       ),
                       Text(
                         '${project.progress.toStringAsFixed(0)}%',
                         style: AppThemes.labelLarge.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -110,11 +120,11 @@ class ProjectTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   LinearProgressIndicator(
                     value: project.progress / 100,
-                    backgroundColor: AppThemes.lightGrey,
+                    backgroundColor: colorScheme.outlineVariant,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       project.progress == 100 
                           ? AppThemes.successGreen 
-                          : AppThemes.primaryBlue,
+                          : colorScheme.primary,
                     ),
                   ),
                 ],
@@ -123,30 +133,39 @@ class ProjectTile extends StatelessWidget {
               const SizedBox(height: 12),
               
               // Stats Row
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStat(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Flexible(
+                    child: _buildStat(
+                      context,
                       'Total',
                       project.totalTodos.toString(),
                       Icons.list,
                     ),
-                    _buildStat(
+                  ),
+                  Flexible(
+                    child: _buildStat(
+                      context,
                       'Done',
                       project.completedTodos.toString(),
                       Icons.check_circle,
                       color: AppThemes.successGreen,
                     ),
-                    _buildStat(
+                  ),
+                  Flexible(
+                    child: _buildStat(
+                      context,
                       'Pending',
                       project.pendingTodos.toString(),
                       Icons.pending,
                       color: AppThemes.warningOrange,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              
+              const SizedBox(height: 12),
               
               // Connection Status
               Row(
@@ -161,20 +180,21 @@ class ProjectTile extends StatelessWidget {
                         : AppThemes.errorRed,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    project.isConnected ? 'Connected' : 'Disconnected',
-                    style: AppThemes.bodyMedium.copyWith(
-                      color: project.isConnected 
-                          ? AppThemes.successGreen 
-                          : AppThemes.errorRed,
-                      fontSize: 12,
+                  Expanded(
+                    child: Text(
+                      project.isConnected ? 'Connected' : 'Disconnected',
+                      style: AppThemes.bodyMedium.copyWith(
+                        color: project.isConnected 
+                            ? AppThemes.successGreen 
+                            : AppThemes.errorRed,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                  const Spacer(),
                   Text(
                     _formatLastUpdated(project.lastUpdated),
                     style: AppThemes.bodyMedium.copyWith(
-                      color: AppThemes.neutralGrey,
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -187,28 +207,37 @@ class ProjectTile extends StatelessWidget {
     );
   }
 
-  Widget _buildStat(String label, String value, IconData icon, {Color? color}) {
+  Widget _buildStat(BuildContext context, String label, String value, IconData icon, {Color? color}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
           size: 20,
-          color: color ?? AppThemes.primaryBlue,
+          color: color ?? colorScheme.primary,
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: AppThemes.titleMedium.copyWith(
             fontWeight: FontWeight.w600,
-            color: color ?? AppThemes.primaryBlue,
+            color: color ?? colorScheme.primary,
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         Text(
           label,
           style: AppThemes.bodyMedium.copyWith(
-            color: AppThemes.neutralGrey,
+            color: colorScheme.onSurfaceVariant,
             fontSize: 12,
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

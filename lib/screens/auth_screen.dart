@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/github_service.dart';
+import '../services/github_oauth_service.dart';
 import '../theme/app_themes.dart';
 import 'dashboard_screen.dart';
 
@@ -15,6 +17,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _tokenController = TextEditingController();
   bool _isLoading = false;
+  bool _isOAuthLoading = false;
 
   @override
   void initState() {
@@ -33,7 +36,7 @@ class _AuthScreenState extends State<AuthScreen> {
     await githubService.testConnection();
   }
 
-  Future<void> _authenticate() async {
+  Future<void> _authenticateWithToken() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -47,10 +50,6 @@ class _AuthScreenState extends State<AuthScreen> {
       final isConnected = await githubService.testConnection();
       
       if (isConnected) {
-        setState(() {
-          // _isAuthenticated = true; // This line is removed
-        });
-        
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
@@ -84,6 +83,45 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _authenticateWithOAuth() async {
+    setState(() {
+      _isOAuthLoading = true;
+    });
+
+    try {
+      final accessToken = await GitHubOAuthService.authenticate();
+      
+      if (accessToken != null) {
+        // OAuth succeeded, proceed with authentication
+        final githubService = Provider.of<GitHubService>(context, listen: false);
+        githubService.setAccessToken(accessToken);
+        
+        final isConnected = await githubService.testConnection();
+        
+        if (isConnected && mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('OAuth authentication failed: $e'),
+            backgroundColor: AppThemes.errorRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isOAuthLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,24 +143,25 @@ class _AuthScreenState extends State<AuthScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Logo and Title
-                Icon(
-                  Icons.dashboard,
-                  size: 80,
-                  color: AppThemes.primaryBlue,
+                Image.asset(
+                  'assets/images/devdash.png',
+                  height: 80,
+                  width: 80,
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Dev Dash',
+                  'CrypticDash',
                   style: AppThemes.headlineLarge.copyWith(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Developer Dashboard',
+                  'Cryptic Dashboard',
                   style: AppThemes.bodyLarge.copyWith(
-                    color: AppThemes.neutralGrey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 18,
                   ),
                 ),
@@ -145,11 +184,66 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 24),
                           
                           Text(
-                            'To use Dev Dash, you need to provide a GitHub Personal Access Token. This allows the app to access your repositories and manage project files.',
+                            'Choose your preferred authentication method:',
                             style: AppThemes.bodyMedium,
                             textAlign: TextAlign.center,
                           ),
+                          const SizedBox(height: 32),
+
+                          // OAuth Button (Primary)
+                          ElevatedButton.icon(
+                            onPressed: _isOAuthLoading ? null : _authenticateWithOAuth,
+                            style: AppThemes.primaryButtonStyle,
+                            icon: _isOAuthLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.login),
+                            label: Text(_isOAuthLoading ? 'Connecting...' : 'Sign in with GitHub'),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Click to open GitHub and authorize the app',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppThemes.neutralGrey,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          
                           const SizedBox(height: 24),
+                          
+                          // Divider
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: AppThemes.neutralGrey)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'OR',
+                                  style: AppThemes.bodyMedium.copyWith(
+                                    color: AppThemes.neutralGrey,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: AppThemes.neutralGrey)),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 24),
+
+                          Text(
+                            'Use Personal Access Token:',
+                            style: AppThemes.titleMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
 
                           TextFormField(
                             controller: _tokenController,
@@ -172,8 +266,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 24),
 
                           ElevatedButton(
-                            onPressed: _isLoading ? null : _authenticate,
-                            style: AppThemes.primaryButtonStyle,
+                            onPressed: _isLoading ? null : _authenticateWithToken,
+                            style: AppThemes.secondaryButtonStyle ?? AppThemes.primaryButtonStyle,
                             child: _isLoading
                                 ? const SizedBox(
                                     height: 20,
@@ -183,14 +277,17 @@ class _AuthScreenState extends State<AuthScreen> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                : const Text('Connect to GitHub'),
+                                : const Text('Connect with Token'),
                           ),
                           const SizedBox(height: 16),
 
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               // Open GitHub token creation page
-                              // You can implement URL launcher here
+                              final url = Uri.parse('https://github.com/settings/tokens');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
                             },
                             child: const Text('How to get a GitHub token?'),
                           ),

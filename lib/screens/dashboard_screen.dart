@@ -73,7 +73,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dev Dash'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/devdash.png',
+              height: 32,
+              width: 32,
+            ),
+            const SizedBox(width: 12),
+            const Text('CrypticDash'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -125,7 +135,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       'Filter: ',
-                      style: AppThemes.titleMedium,
+                      style: AppThemes.titleMedium.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     FilterChip(
@@ -191,14 +203,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ? 'No projects found matching "$_searchQuery"'
                               : 'No projects found',
                           style: AppThemes.titleMedium.copyWith(
-                            color: AppThemes.neutralGrey,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Add a project to get started',
                           style: AppThemes.bodyMedium.copyWith(
-                            color: AppThemes.neutralGrey,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -219,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.all(16),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 1.2,
+                      childAspectRatio: 1.0, // Changed from 1.2 to 1.0 to give more height
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                     ),

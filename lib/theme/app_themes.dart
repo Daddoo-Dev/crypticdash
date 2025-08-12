@@ -15,9 +15,13 @@ class AppThemes {
         error: const Color(0xFFD32F2F),
         onPrimary: const Color(0xFFFFFFFF),
         onSecondary: const Color(0xFFFFFFFF),
-        onSurface: const Color(0xFF212121),
-        onBackground: const Color(0xFF212121),
+        onSurface: const Color(0xFF1C1B1F), // MD3 standard dark text
+        onBackground: const Color(0xFF1C1B1F), // MD3 standard dark text
         onError: const Color(0xFFFFFFFF),
+        surfaceVariant: const Color(0xFFF3F3F3),
+        onSurfaceVariant: const Color(0xFF49454F),
+        outline: const Color(0xFF79747E),
+        outlineVariant: const Color(0xFFCAC4D0),
       ),
       appBarTheme: const AppBarTheme(
         elevation: 0,
@@ -78,11 +82,11 @@ class AppThemes {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderSide: const BorderSide(color: Color(0xFFCAC4D0)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderSide: const BorderSide(color: Color(0xFFCAC4D0)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -94,7 +98,7 @@ class AppThemes {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         filled: true,
-        fillColor: const Color(0xFFFAFAFA),
+        fillColor: const Color(0xFFF3F3F3),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFFE3F2FD),
@@ -109,10 +113,10 @@ class AppThemes {
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: Color(0xFF1976D2),
-        linearTrackColor: Color(0xFFE0E0E0),
+        linearTrackColor: Color(0xFFCAC4D0),
       ),
       dividerTheme: const DividerThemeData(
-        color: Color(0xFFE0E0E0),
+        color: Color(0xFFCAC4D0),
         thickness: 1,
         space: 1,
       ),
@@ -132,14 +136,18 @@ class AppThemes {
         brightness: Brightness.dark,
         primary: const Color(0xFF90CAF9),
         secondary: const Color(0xFF9E9E9E),
-        surface: const Color(0xFF121212),
-        background: const Color(0xFF000000),
+        surface: const Color(0xFF1C1B1F), // MD3 standard dark surface
+        background: const Color(0xFF0F0F0F), // Slightly lighter than pure black
         error: const Color(0xFFEF5350),
         onPrimary: const Color(0xFF000000),
         onSecondary: const Color(0xFF000000),
-        onSurface: const Color(0xFFFFFFFF),
-        onBackground: const Color(0xFFFFFFFF),
+        onSurface: const Color(0xFFE6E1E5), // MD3 standard light text
+        onBackground: const Color(0xFFE6E1E5), // MD3 standard light text
         onError: const Color(0xFF000000),
+        surfaceVariant: const Color(0xFF2D2D2D),
+        onSurfaceVariant: const Color(0xFFCAC4D0),
+        outline: const Color(0xFF938F99),
+        outlineVariant: const Color(0xFF49454F),
       ),
       appBarTheme: const AppBarTheme(
         elevation: 0,
@@ -157,7 +165,7 @@ class AppThemes {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFF2D2D2D), // Lighter than surface for better contrast
         surfaceTintColor: Colors.transparent,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -200,11 +208,11 @@ class AppThemes {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF424242)),
+          borderSide: const BorderSide(color: Color(0xFF49454F)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF424242)),
+          borderSide: const BorderSide(color: Color(0xFF49454F)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -216,7 +224,7 @@ class AppThemes {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         filled: true,
-        fillColor: const Color(0xFF1E1E1E),
+        fillColor: const Color(0xFF2D2D2D),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFF1A237E),
@@ -231,10 +239,10 @@ class AppThemes {
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: Color(0xFF90CAF9),
-        linearTrackColor: Color(0xFF424242),
+        linearTrackColor: Color(0xFF49454F),
       ),
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF424242),
+        color: Color(0xFF49454F),
         thickness: 1,
         space: 1,
       ),
@@ -245,7 +253,7 @@ class AppThemes {
     );
   }
 
-  // Custom Colors
+  // Custom Colors - Updated for better contrast
   static const Color primaryBlue = Color(0xFF1976D2);
   static const Color lightBlue = Color(0xFFE3F2FD);
   static const Color darkBlue = Color(0xFF0D47A1);
@@ -256,59 +264,82 @@ class AppThemes {
   static const Color lightGrey = Color(0xFFF5F5F5);
   static const Color darkGrey = Color(0xFF424242);
 
-  // Custom Text Styles
-  static const TextStyle headlineLarge = TextStyle(
+  // Custom Text Styles - Now adapt to theme
+  static TextStyle get headlineLarge => const TextStyle(
     fontSize: 32,
     fontWeight: FontWeight.bold,
-    color: Color(0xFF1976D2),
   );
 
-  static const TextStyle headlineMedium = TextStyle(
+  static TextStyle get headlineMedium => const TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w600,
-    color: Color(0xFF1976D2),
   );
 
-  static const TextStyle headlineSmall = TextStyle(
+  static TextStyle get headlineSmall => const TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
-    color: Color(0xFF1976D2),
   );
 
-  static const TextStyle titleLarge = TextStyle(
+  static TextStyle get titleLarge => const TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w500,
-    color: Color(0xFF212121),
   );
 
-  static const TextStyle titleMedium = TextStyle(
+  static TextStyle get titleMedium => const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
-    color: Color(0xFF212121),
   );
 
-  static const TextStyle bodyLarge = TextStyle(
+  static TextStyle get bodyLarge => const TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.normal,
-    color: Color(0xFF212121),
   );
 
-  static const TextStyle bodyMedium = TextStyle(
+  static TextStyle get bodyMedium => const TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.normal,
-    color: Color(0xFF212121),
   );
 
-  static const TextStyle labelLarge = TextStyle(
+  static TextStyle get labelLarge => const TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
-    color: Color(0xFF1976D2),
   );
 
-  // Custom Button Styles
+  // Helper methods to get theme-appropriate colors
+  static Color getTextColor(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurface;
+  }
+
+  static Color getBackgroundColor(BuildContext context) {
+    return Theme.of(context).colorScheme.surface;
+  }
+
+  static Color getCardColor(BuildContext context) {
+    return Theme.of(context).colorScheme.surface;
+  }
+
+  static Color getPrimaryColor(BuildContext context) {
+    return Theme.of(context).colorScheme.primary;
+  }
+
+  static Color getSecondaryColor(BuildContext context) {
+    return Theme.of(context).colorScheme.secondary;
+  }
+
+  static Color getErrorColor(BuildContext context) {
+    return Theme.of(context).colorScheme.error;
+  }
+
+  static Color getSuccessColor(BuildContext context) {
+    return successGreen;
+  }
+
+  static Color getWarningColor(BuildContext context) {
+    return warningOrange;
+  }
+
+  // Custom Button Styles - Updated to use theme colors
   static ButtonStyle get primaryButtonStyle => ElevatedButton.styleFrom(
-    backgroundColor: primaryBlue,
-    foregroundColor: Colors.white,
     elevation: 2,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(8),
@@ -317,8 +348,6 @@ class AppThemes {
   );
 
   static ButtonStyle get secondaryButtonStyle => OutlinedButton.styleFrom(
-    foregroundColor: primaryBlue,
-    side: const BorderSide(color: primaryBlue),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(8),
     ),
@@ -326,7 +355,6 @@ class AppThemes {
   );
 
   static ButtonStyle get textButtonStyle => TextButton.styleFrom(
-    foregroundColor: primaryBlue,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(8),
     ),
