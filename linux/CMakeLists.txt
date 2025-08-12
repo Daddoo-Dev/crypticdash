@@ -1,10 +1,10 @@
 # Project-level configuration.
-cmake_minimum_required(VERSION 3.13)
-project(runner LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.10)
+project(crypticdash LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "devdash")
+set(BINARY_NAME "crypticdash")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
 set(APPLICATION_ID "com.example.devdash")
@@ -26,25 +26,42 @@ if(FLUTTER_TARGET_PLATFORM_SYSROOT)
   set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endif()
 
-# Define build configuration options.
+# Configure build options.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE "Debug" CACHE
+  set(CMAKE_BUILD_TYPE "Release" CACHE
     STRING "Flutter build mode" FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
     "Debug" "Profile" "Release")
 endif()
 
-# Compilation settings that should be applied to most targets.
-#
-# Be cautious about adding new options here, as plugins use this function by
-# default. In most cases, you should add new options to specific targets instead
-# of modifying this function.
-function(APPLY_STANDARD_SETTINGS TARGET)
-  target_compile_features(${TARGET} PUBLIC cxx_std_14)
-  target_compile_options(${TARGET} PRIVATE -Wall -Werror)
-  target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:-O3>")
-  target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
-endfunction()
+set(CMAKE_EXE_LINKER_FLAGS_PROFILE "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
+set(CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
+
+# Use colored output if the terminal supports it.
+if(CMAKE_COLOR_MAKEFILE)
+  set_property(GLOBAL PROPERTY ENABLE_COLORED_OUTPUT ON)
+endif()
+
+# Use unicode on Windows.
+if(WIN32)
+  add_definitions(-DUNICODE -D_UNICODE)
+endif()
+
+# Compilation settings
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add preprocessor definitions
+add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
+
+# Application sources
+add_executable(${BINARY_NAME} "main.cc")
+apply_standard_settings(${BINARY_NAME})
+target_compile_definitions(${BINARY_NAME} PRIVATE "APPLICATION_ID=\"${APPLICATION_ID}\"")
+target_link_libraries(${BINARY_NAME} PRIVATE flutter)
+target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
 # Flutter library and tool build rules.
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")

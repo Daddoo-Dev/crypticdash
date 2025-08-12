@@ -10,11 +10,11 @@ import 'screens/auth_screen.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
-  runApp(const DevDashApp());
+  runApp(const CrypticDashApp());
 }
 
-class DevDashApp extends StatelessWidget {
-  const DevDashApp({super.key});
+class CrypticDashApp extends StatelessWidget {
+  const CrypticDashApp({super.key});
 
   @override
   Widget build(BuildContext context) {

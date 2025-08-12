@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/github_service.dart';
 import '../services/github_oauth_service.dart';
 import '../services/theme_service.dart';
-import '../services/project_selection_service.dart';
 import '../theme/app_themes.dart';
 import 'project_selection_screen.dart';
 

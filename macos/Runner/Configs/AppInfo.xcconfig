@@ -10,5 +10,26 @@ PRODUCT_NAME = CrypticDash
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = com.example.crypticdash
 
+// The application's bundle name
+PRODUCT_BUNDLE_NAME = CrypticDash
+
+// The application's bundle package type
+PRODUCT_BUNDLE_PACKAGE_TYPE = APPL
+
+// The application's bundle short version string
+PRODUCT_BUNDLE_SHORT_VERSION_STRING = 1.0.0
+
+// The application's bundle version
+PRODUCT_BUNDLE_VERSION = 1
+
+// The application's module name
+PRODUCT_MODULE_NAME = Runner
+
+// The application's settings path
+PRODUCT_SETTINGS_PATH = Runner/Info.plist
+
+// The application's version
+PRODUCT_VERSION = 1.0.0
+
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
