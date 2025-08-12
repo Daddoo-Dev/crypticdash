@@ -5,6 +5,7 @@ import '../services/project_service.dart';
 import '../theme/app_themes.dart';
 import '../widgets/project_tile.dart';
 import '../widgets/add_project_dialog.dart';
+import '../services/theme_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -69,194 +70,210 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return projects;
   }
 
+  void _toggleTheme() {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
+    themeService.toggleTheme();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/devdash.png',
-              height: 32,
-              width: 32,
-            ),
-            const SizedBox(width: 12),
-            const Text('CrypticDash'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadProjects,
-            tooltip: 'Refresh Projects',
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: Implement settings screen
-            },
-            tooltip: 'Settings',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search and Filter Bar
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        final isDarkMode = themeService.isDarkMode;
+        
+        return Scaffold(
+          appBar: AppBar(
+            title: Row(
               children: [
-                // Search Bar
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search projects...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
+                Image.asset(
+                  'assets/images/devdash.png',
+                  height: 32,
+                  width: 32,
                 ),
-                const SizedBox(height: 16),
-
-                // Filter Chips
-                Row(
-                  children: [
-                    Text(
-                      'Filter: ',
-                      style: AppThemes.titleMedium.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('All'),
-                      selected: _filterStatus == 'all',
-                      onSelected: (selected) {
-                        setState(() {
-                          _filterStatus = 'all';
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Connected'),
-                      selected: _filterStatus == 'connected',
-                      onSelected: (selected) {
-                        setState(() {
-                          _filterStatus = 'connected';
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Disconnected'),
-                      selected: _filterStatus == 'disconnected',
-                      onSelected: (selected) {
-                        setState(() {
-                          _filterStatus = 'disconnected';
-                        });
-                      },
-                    ),
-                  ],
-                ),
+                const SizedBox(width: 12),
+                const Text('CrypticDash'),
               ],
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadProjects,
+                tooltip: 'Refresh Projects',
+              ),
+              IconButton(
+                icon: Icon(themeService.getThemeIcon()),
+                onPressed: _toggleTheme,
+                tooltip: 'Switch Theme (${themeService.getThemeModeName()})',
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  // TODO: Implement settings screen
+                },
+                tooltip: 'Settings',
+              ),
+            ],
           ),
+          body: Column(
+            children: [
+              // Search and Filter Bar
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Search Bar
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search projects...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  setState(() {
+                                    _searchQuery = '';
+                                  });
+                                },
+                              )
+                            : null,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-          // Projects Grid
-          Expanded(
-            child: Consumer<ProjectService>(
-              builder: (context, projectService, child) {
-                final projects = _getFilteredProjects();
-
-                if (_isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (projects.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    // Filter Chips
+                    Row(
                       children: [
-                        Icon(
-                          Icons.folder_open,
-                          size: 64,
-                          color: AppThemes.neutralGrey,
-                        ),
-                        const SizedBox(height: 16),
                         Text(
-                          _searchQuery.isNotEmpty
-                              ? 'No projects found matching "$_searchQuery"'
-                              : 'No projects found',
+                          'Filter: ',
                           style: AppThemes.titleMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Add a project to get started',
-                          style: AppThemes.bodyMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('All'),
+                          selected: _filterStatus == 'all',
+                          onSelected: (selected) {
+                            setState(() {
+                              _filterStatus = 'all';
+                            });
+                          },
                         ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () => _showAddProjectDialog(context),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Project'),
-                          style: AppThemes.primaryButtonStyle,
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Connected'),
+                          selected: _filterStatus == 'connected',
+                          onSelected: (selected) {
+                            setState(() {
+                              _filterStatus = 'connected';
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Disconnected'),
+                          selected: _filterStatus == 'disconnected',
+                          onSelected: (selected) {
+                            setState(() {
+                              _filterStatus = 'disconnected';
+                            });
+                          },
                         ),
                       ],
                     ),
-                  );
-                }
+                  ],
+                ),
+              ),
 
-                return RefreshIndicator(
-                  onRefresh: _loadProjects,
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 1.0, // Changed from 1.2 to 1.0 to give more height
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: projects.length,
-                    itemBuilder: (context, index) {
-                      final project = projects[index];
-                      return ProjectTile(
-                        project: project,
-                        onTap: () => _openProjectDetails(project),
-                        onRefresh: () => _loadProjects(),
+              // Projects Grid
+              Expanded(
+                child: Consumer<ProjectService>(
+                  builder: (context, projectService, child) {
+                    final projects = _getFilteredProjects();
+
+                    if (_isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
                       );
-                    },
-                  ),
-                );
-              },
-            ),
+                    }
+
+                    if (projects.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.folder_open,
+                              size: 64,
+                              color: AppThemes.neutralGrey,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isNotEmpty
+                                  ? 'No projects found matching "$_searchQuery"'
+                                  : 'No projects found',
+                              style: AppThemes.titleMedium.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add a project to get started',
+                              style: AppThemes.bodyMedium.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () => _showAddProjectDialog(context),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Project'),
+                              style: AppThemes.primaryButtonStyle,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: _loadProjects,
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.0, // Changed from 1.2 to 1.0 to give more height
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: projects.length,
+                        itemBuilder: (context, index) {
+                          final project = projects[index];
+                          return ProjectTile(
+                            project: project,
+                            onTap: () => _openProjectDetails(project),
+                            onRefresh: () => _loadProjects(),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddProjectDialog(context),
-        backgroundColor: AppThemes.primaryBlue,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showAddProjectDialog(context),
+            backgroundColor: AppThemes.primaryBlue,
+            foregroundColor: Colors.white,
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'services/github_service.dart';
 import 'services/project_service.dart';
+import 'services/theme_service.dart';
 import 'theme/app_themes.dart';
 import 'screens/auth_screen.dart';
 
@@ -28,14 +29,21 @@ class DevDashApp extends StatelessWidget {
           update: (context, githubService, previous) => 
             previous ?? ProjectService(githubService),
         ),
+        ChangeNotifierProvider(
+          create: (context) => ThemeService(),
+        ),
       ],
-      child: MaterialApp(
-        title: 'CrypticDash',
-        debugShowCheckedModeBanner: false,
-        theme: AppThemes.lightTheme,
-        darkTheme: AppThemes.darkTheme,
-        themeMode: ThemeMode.system, // This will automatically switch between light/dark based on system preference
-        home: const AuthScreen(),
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return MaterialApp(
+            title: 'CrypticDash',
+            debugShowCheckedModeBanner: false,
+            theme: AppThemes.lightTheme,
+            darkTheme: AppThemes.darkTheme,
+            themeMode: themeService.themeMode,
+            home: const AuthScreen(),
+          );
+        },
       ),
     );
   }
