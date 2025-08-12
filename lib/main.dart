@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'services/github_service.dart';
 import 'services/project_service.dart';
 import 'services/theme_service.dart';
+import 'services/project_selection_service.dart';
 import 'theme/app_themes.dart';
 import 'screens/auth_screen.dart';
 
@@ -22,15 +23,22 @@ class DevDashApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => GitHubService(),
         ),
-        ChangeNotifierProxyProvider<GitHubService, ProjectService>(
-          create: (context) => ProjectService(
-            Provider.of<GitHubService>(context, listen: false),
-          ),
-          update: (context, githubService, previous) => 
-            previous ?? ProjectService(githubService),
-        ),
         ChangeNotifierProvider(
           create: (context) => ThemeService(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => ProjectSelectionService(),
+        ),
+        ChangeNotifierProxyProvider2<GitHubService, ProjectSelectionService, ProjectService>(
+          create: (context) => ProjectService(
+            Provider.of<GitHubService>(context, listen: false),
+            Provider.of<ProjectSelectionService>(context, listen: false),
+          ),
+          update: (context, githubService, projectSelectionService, previous) => 
+            previous ?? ProjectService(
+              githubService,
+              projectSelectionService,
+            ),
         ),
       ],
       child: Consumer<ThemeService>(

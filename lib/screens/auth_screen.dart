@@ -4,8 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/github_service.dart';
 import '../services/github_oauth_service.dart';
 import '../services/theme_service.dart';
+import '../services/project_selection_service.dart';
 import '../theme/app_themes.dart';
-import 'dashboard_screen.dart';
+import 'project_selection_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -19,11 +20,12 @@ class _AuthScreenState extends State<AuthScreen> {
   final _tokenController = TextEditingController();
   bool _isLoading = false;
   bool _isOAuthLoading = false;
+  bool _isCheckingToken = true;
 
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
+    _checkExistingToken();
   }
 
   @override
@@ -32,9 +34,26 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  Future<void> _checkAuthStatus() async {
-    final githubService = Provider.of<GitHubService>(context, listen: false);
-    await githubService.testConnection();
+  Future<void> _checkExistingToken() async {
+    try {
+      final githubService = Provider.of<GitHubService>(context, listen: false);
+      final hasValidToken = await githubService.hasValidToken();
+      
+      if (hasValidToken && mounted) {
+        // Auto-login with existing token
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ProjectSelectionScreen()),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error checking existing token: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingToken = false;
+        });
+      }
+    }
   }
 
   Future<void> _authenticateWithToken() async {
@@ -46,14 +65,14 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       final githubService = Provider.of<GitHubService>(context, listen: false);
-      githubService.setAccessToken(_tokenController.text.trim());
+      await githubService.setAccessToken(_tokenController.text.trim());
       
       final isConnected = await githubService.testConnection();
       
       if (isConnected) {
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            MaterialPageRoute(builder: (context) => const ProjectSelectionScreen()),
           );
         }
       } else {
@@ -95,13 +114,13 @@ class _AuthScreenState extends State<AuthScreen> {
       if (accessToken != null) {
         // OAuth succeeded, proceed with authentication
         final githubService = Provider.of<GitHubService>(context, listen: false);
-        githubService.setAccessToken(accessToken);
+        await githubService.setAccessToken(accessToken);
         
         final isConnected = await githubService.testConnection();
         
         if (isConnected && mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            MaterialPageRoute(builder: (context) => const ProjectSelectionScreen()),
           );
         }
       }
@@ -132,6 +151,54 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
+        // Show loading screen while checking for existing token
+        if (_isCheckingToken) {
+          return Scaffold(
+            body: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppThemes.lightBlue,
+                    Colors.white,
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      themeService.getLogoAsset(),
+                      height: 80,
+                      width: 80,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      themeService.getAppName(),
+                      style: AppThemes.headlineLarge.copyWith(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Checking authentication...',
+                      style: AppThemes.bodyMedium.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         return Scaffold(
           body: Container(
             decoration: BoxDecoration(

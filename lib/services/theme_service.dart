@@ -98,33 +98,13 @@ class ThemeService extends ChangeNotifier {
   
   // Get the appropriate app name based on current theme
   String getAppName() {
-    switch (_themeMode) {
-      case ThemeMode.light:
-        return 'CrypticDash';
-      case ThemeMode.dark:
-        return 'CrypticDash Dark';
-      case ThemeMode.system:
-        // For system mode, check current system brightness
-        final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
-        return brightness == Brightness.dark 
-            ? 'CrypticDash Dark'
-            : 'CrypticDash';
-    }
+    // Always return "CrypticDash" regardless of theme
+    return 'CrypticDash';
   }
   
   // Get the appropriate app title based on current theme
   String getAppTitle() {
-    switch (_themeMode) {
-      case ThemeMode.light:
-        return 'Cryptic Dashboard';
-      case ThemeMode.dark:
-        return 'Cryptic Dashboard (Dark)';
-      case ThemeMode.system:
-        // For system mode, check current system brightness
-        final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
-        return brightness == Brightness.dark 
-            ? 'Cryptic Dashboard (Dark)'
-            : 'Cryptic Dashboard';
-    }
+    // Always return "Cryptic Dashboard" regardless of theme
+    return 'A dynamic dashboard for managing your projects';
   }
 }

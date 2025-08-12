@@ -1,27 +1,50 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/project.dart';
 import '../models/github_repository.dart';
 import '../services/github_service.dart';
 import '../services/markdown_service.dart';
+import '../services/project_selection_service.dart';
 
 class ProjectService extends ChangeNotifier {
   final GitHubService _githubService;
+  final ProjectSelectionService _projectSelectionService;
   final List<Project> _projects = [];
   final Map<String, String> _projectPaths = {};
 
-  ProjectService(this._githubService);
+  ProjectService(this._githubService, this._projectSelectionService) {
+    // Set up callback to refresh projects when selection changes
+    // Use a post-frame callback to ensure the service is fully initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_projectSelectionService != null) {
+        _projectSelectionService.setOnSelectionChangedCallback(() {
+          loadProjects();
+        });
+      }
+    });
+  }
 
   List<Project> get projects => List.unmodifiable(_projects);
 
   Future<void> loadProjects() async {
     try {
-      final repos = await _githubService.getUserRepositories();
+      final allRepos = await _githubService.getUserRepositories();
+      
+      // Filter to only selected repositories if ProjectSelectionService is available
+      List<GitHubRepository> selectedRepos;
+      if (_projectSelectionService != null) {
+        selectedRepos = _projectSelectionService.getFilteredRepositories(allRepos);
+      } else {
+        // If ProjectSelectionService is not available yet, show all repos
+        selectedRepos = allRepos;
+      }
+      
       _projects.clear();
       _projectPaths.clear();
 
-      for (final repo in repos) {
+      for (final repo in selectedRepos) {
         final project = await _loadProjectFromRepo(repo);
         if (project != null) {
           _projects.add(project);

@@ -6,6 +6,9 @@ import '../theme/app_themes.dart';
 import '../widgets/project_tile.dart';
 import '../widgets/add_project_dialog.dart';
 import '../services/theme_service.dart';
+import '../screens/project_selection_screen.dart';
+import '../services/github_service.dart'; // Added import for GitHubService
+import '../screens/auth_screen.dart'; // Added import for AuthScreen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,10 +25,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProjects();
+    // Use a post-frame callback to avoid BuildContext issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProjects();
+    });
   }
 
   Future<void> _loadProjects() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
     });
@@ -35,12 +43,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await projectService.loadProjects();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load projects: $e'),
-            backgroundColor: AppThemes.errorRed,
-          ),
-        );
+        // Only show error message if widget is still mounted
+        setState(() {
+          _isLoading = false;
+        });
+        // Use a delayed callback to ensure context is fully available
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load projects: $e'),
+                backgroundColor: AppThemes.errorRed,
+              ),
+            );
+          }
+        });
       }
     } finally {
       if (mounted) {
@@ -101,9 +118,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 tooltip: 'Refresh Projects',
               ),
               IconButton(
+                icon: const Icon(Icons.manage_accounts),
+                onPressed: () => _showProjectManagement(context),
+                tooltip: 'Manage Projects',
+              ),
+              IconButton(
                 icon: Icon(themeService.getThemeIcon()),
                 onPressed: _toggleTheme,
                 tooltip: 'Switch Theme (${themeService.getThemeModeName()})',
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () => _showLogoutDialog(context),
+                tooltip: 'Logout',
               ),
               IconButton(
                 icon: const Icon(Icons.settings),
@@ -235,6 +262,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               label: const Text('Add Project'),
                               style: AppThemes.primaryButtonStyle,
                             ),
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: () => _showProjectManagement(context),
+                              icon: const Icon(Icons.manage_accounts),
+                              label: const Text('Manage Projects'),
+                              style: AppThemes.secondaryButtonStyle,
+                            ),
                           ],
                         ),
                       );
@@ -292,5 +326,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
         duration: const Duration(seconds: 1),
       ),
     );
+  }
+
+  void _showProjectManagement(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const ProjectSelectionScreen(isSetupMode: false)),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout? This will clear your GitHub authentication.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _logout();
+            },
+            style: AppThemes.primaryButtonStyle,
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _logout() async {
+    try {
+      final githubService = Provider.of<GitHubService>(context, listen: false);
+      await githubService.clearAccessToken();
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: AppThemes.errorRed,
+          ),
+        );
+      }
+    }
   }
 }

@@ -1,17 +1,71 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/github_repository.dart';
 
 class GitHubService extends ChangeNotifier {
+  static const String _tokenKey = 'github_access_token';
   String? _accessToken;
   final String _baseUrl = 'https://api.github.com';
 
   String? get accessToken => _accessToken;
 
-  void setAccessToken(String token) {
+  GitHubService() {
+    _loadStoredToken();
+  }
+
+  Future<void> _loadStoredToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedToken = prefs.getString(_tokenKey);
+      if (storedToken != null && storedToken.isNotEmpty) {
+        _accessToken = storedToken;
+        debugPrint('Loaded stored GitHub token');
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading stored token: $e');
+    }
+  }
+
+  Future<void> setAccessToken(String token) async {
     _accessToken = token;
+    
+    // Save token to persistent storage
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_tokenKey, token);
+      debugPrint('Saved GitHub token to persistent storage');
+    } catch (e) {
+      debugPrint('Error saving token: $e');
+    }
+    
     notifyListeners();
+  }
+
+  Future<void> clearAccessToken() async {
+    _accessToken = null;
+    
+    // Remove token from persistent storage
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_tokenKey);
+      debugPrint('Cleared GitHub token from persistent storage');
+    } catch (e) {
+      debugPrint('Error clearing token: $e');
+    }
+    
+    notifyListeners();
+  }
+
+  Future<bool> hasValidToken() async {
+    if (_accessToken == null || _accessToken!.isEmpty) {
+      return false;
+    }
+    
+    // Test if the stored token is still valid
+    return await testConnection();
   }
 
   Future<bool> testConnection() async {
