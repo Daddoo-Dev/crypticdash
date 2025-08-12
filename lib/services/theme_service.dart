@@ -79,4 +79,52 @@ class ThemeService extends ChangeNotifier {
         return Icons.brightness_auto;
     }
   }
+  
+  // Get the appropriate logo based on current theme
+  String getLogoAsset() {
+    switch (_themeMode) {
+      case ThemeMode.light:
+        return 'assets/images/crypticdash.png';
+      case ThemeMode.dark:
+        return 'assets/images/crypticdashdark.png';
+      case ThemeMode.system:
+        // For system mode, check current system brightness
+        final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        return brightness == Brightness.dark 
+            ? 'assets/images/crypticdashdark.png'
+            : 'assets/images/crypticdash.png';
+    }
+  }
+  
+  // Get the appropriate app name based on current theme
+  String getAppName() {
+    switch (_themeMode) {
+      case ThemeMode.light:
+        return 'CrypticDash';
+      case ThemeMode.dark:
+        return 'CrypticDash Dark';
+      case ThemeMode.system:
+        // For system mode, check current system brightness
+        final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        return brightness == Brightness.dark 
+            ? 'CrypticDash Dark'
+            : 'CrypticDash';
+    }
+  }
+  
+  // Get the appropriate app title based on current theme
+  String getAppTitle() {
+    switch (_themeMode) {
+      case ThemeMode.light:
+        return 'Cryptic Dashboard';
+      case ThemeMode.dark:
+        return 'Cryptic Dashboard (Dark)';
+      case ThemeMode.system:
+        // For system mode, check current system brightness
+        final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        return brightness == Brightness.dark 
+            ? 'Cryptic Dashboard (Dark)'
+            : 'Cryptic Dashboard';
+    }
+  }
 }

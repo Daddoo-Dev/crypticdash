@@ -126,17 +126,20 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/devdash.png"
+  image_path: "assets/images/crypticdash.png"
   min_sdk_android: 21
   web:
     generate: true
-    image_path: "assets/images/devdash.png"
+    image_path: "assets/images/crypticdash.png"
     background_color: "#1976D2"
     theme_color: "#1976D2"
   windows:
     generate: true
-    image_path: "assets/images/devdash.png"
+    image_path: "assets/images/crypticdash.png"
     icon_size: 48
   macos:
     generate: true
-    image_path: "assets/images/devdash.png"
+    image_path: "assets/images/crypticdash.png"
+  
+  # Dark theme icons (optional - you can generate these separately)
+  # To generate dark theme icons, run: flutter pub run flutter_launcher_icons:main -f pubspec_dark.yaml

@@ -170,13 +170,13 @@ class _AuthScreenState extends State<AuthScreen> {
                       children: [
                         // Logo and Title
                         Image.asset(
-                          'assets/images/devdash.png',
+                          themeService.getLogoAsset(),
                           height: 80,
                           width: 80,
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'CrypticDash',
+                          themeService.getAppName(),
                           style: AppThemes.headlineLarge.copyWith(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
@@ -185,7 +185,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Cryptic Dashboard',
+                          themeService.getAppTitle(),
                           style: AppThemes.bodyLarge.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 18,

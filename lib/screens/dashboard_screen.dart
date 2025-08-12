@@ -86,12 +86,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             title: Row(
               children: [
                 Image.asset(
-                  'assets/images/devdash.png',
+                  themeService.getLogoAsset(),
                   height: 32,
                   width: 32,
                 ),
                 const SizedBox(width: 12),
-                const Text('CrypticDash'),
+                Text(themeService.getAppName()),
               ],
             ),
             actions: [
