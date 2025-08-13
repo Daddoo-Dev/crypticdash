@@ -1,8 +1,7 @@
 import '../models/project.dart';
-import 'package:flutter/foundation.dart'; // Added for debugPrint
+import 'package:flutter/foundation.dart';
 
 class MarkdownService {
-  // Support multiple TODO file names
   static const List<String> _projectFileNames = [
     'TODO.md',
     'PROJECT.md',
@@ -43,7 +42,7 @@ class MarkdownService {
     buffer.writeln('## Todo List');
     for (final todo in project.todos) {
       final checkbox = todo.isCompleted ? '[x]' : '[ ]';
-      buffer.writeln('- $checkbox ${todo.title}');
+      buffer.writeln('- $checkbox $todo.title');
       if (todo.notes != null && todo.notes!.isNotEmpty) {
         buffer.writeln('  - ${todo.notes}');
       }
@@ -100,7 +99,7 @@ class MarkdownService {
           switch (currentSection) {
             case 0: // Overview
               if (line.isNotEmpty) {
-                description += line + '\n';
+                description += '$line\n';
               }
               break;
             case 2: // Todo List
@@ -119,7 +118,7 @@ class MarkdownService {
               break;
             case 3: // Notes
               if (line.isNotEmpty) {
-                notes += line + '\n';
+                notes += '$line\n';
               }
               break;
           }
@@ -147,7 +146,6 @@ class MarkdownService {
     }
   }
 
-  // New method to parse our enhanced TODO format
   static Project? parseEnhancedTodoMarkdown(String markdown, String repoName, String owner) {
     try {
       final lines = markdown.split('\n');
@@ -201,7 +199,7 @@ class MarkdownService {
                   line.startsWith('**Last Updated**:')) {
                 // Skip metadata lines
               } else if (line.isNotEmpty && !line.startsWith('**')) {
-                description += line + '\n';
+                description += '$line\n';
               }
               break;
             case 1: // Project Goals
@@ -308,9 +306,9 @@ class MarkdownService {
             case 4: // Notes & Updates
               if (line.startsWith('### ')) {
                 // Date header
-                notes += '\n${line}\n';
+                notes += '\n$line\n';
               } else if (line.startsWith('- ') && line.isNotEmpty) {
-                notes += line + '\n';
+                notes += '$line\n';
               }
               break;
             case 5: // Technical Tasks
@@ -392,7 +390,7 @@ class MarkdownService {
         return null;
       }
     } catch (e) {
-      print('Error parsing enhanced TODO markdown: $e');
+      debugPrint('Error parsing enhanced TODO markdown: $e');
       return null;
     }
   }
@@ -419,7 +417,7 @@ class MarkdownService {
   static String getTemplateContent(String templateName) {
     switch (templateName) {
       case 'Web App':
-        return '''# ${templateName}
+        return '''# $templateName
 ## Overview
 A web application project
 
@@ -442,7 +440,7 @@ Project started on ${DateTime.now().toIso8601String()}
 ''';
       
       case 'Mobile App':
-        return '''# ${templateName}
+        return '''# $templateName
 ## Overview
 A mobile application project
 
@@ -465,7 +463,7 @@ Project started on ${DateTime.now().toIso8601String()}
 ''';
       
       case 'API':
-        return '''# ${templateName}
+        return '''# $templateName
 ## Overview
 An API service project
 
@@ -489,7 +487,7 @@ Project started on ${DateTime.now().toIso8601String()}
 ''';
       
       default:
-        return '''# ${templateName}
+        return '''# $templateName
 ## Overview
 Custom project template
 
@@ -507,9 +505,8 @@ Project started on ${DateTime.now().toIso8601String()}
     }
   }
 
-  // New methods for TODO.md files
   static String generateInitialTodoContent(String projectName) {
-    return '''# ${projectName} - Development Tasks
+    return '''# $projectName - Development Tasks
 
 ## Progress: 0% Complete
 
@@ -542,7 +539,7 @@ Project started on ${DateTime.now().toIso8601String()}
     buffer.writeln('## Todo List');
     for (final todo in todos) {
       final checkbox = todo.isCompleted ? '[x]' : '[ ]';
-      buffer.writeln('- $checkbox ${todo.title}');
+      buffer.writeln('- $checkbox $todo.title');
       if (todo.notes != null && todo.notes!.isNotEmpty) {
         buffer.writeln('  - ${todo.notes}');
       }
@@ -583,7 +580,6 @@ Project started on ${DateTime.now().toIso8601String()}
     return todos;
   }
 
-  // New method to generate properly formatted TODO content for the enhanced parser
   static String generateFormattedTodoContent(String projectName, List<String> todos) {
     final buffer = StringBuffer();
     

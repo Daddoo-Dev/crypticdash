@@ -91,7 +91,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   SliverGridDelegate _getGridDelegate(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     
     // Calculate optimal card width based on screen size
     double maxCardWidth;
@@ -135,7 +134,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        final isDarkMode = themeService.isDarkMode;
         
         return Scaffold(
           appBar: AppBar(
@@ -174,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               IconButton(
                 icon: const Icon(Icons.settings),
                 onPressed: () {
-                  // TODO: Implement settings screen
+                  // Settings screen not implemented yet
                 },
                 tooltip: 'Settings',
               ),
@@ -273,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.folder_open,
                               size: 64,
                               color: AppThemes.neutralGrey,

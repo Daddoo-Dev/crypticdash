@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../models/project.dart';
 import '../models/github_repository.dart';
@@ -15,11 +14,9 @@ class ProjectService extends ChangeNotifier {
     // Set up callback to refresh projects when selection changes
     // Use a post-frame callback to ensure the service is fully initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_projectSelectionService != null) {
-        _projectSelectionService.setOnSelectionChangedCallback(() {
-          loadProjects();
-        });
-      }
+      _projectSelectionService.setOnSelectionChangedCallback(() {
+        loadProjects();
+      });
     });
   }
 
@@ -31,12 +28,7 @@ class ProjectService extends ChangeNotifier {
       
       // Filter to only selected repositories if ProjectSelectionService is available
       List<GitHubRepository> selectedRepos;
-      if (_projectSelectionService != null) {
-        selectedRepos = _projectSelectionService.getFilteredRepositories(allRepos);
-      } else {
-        // If ProjectSelectionService is not available yet, show all repos
-        selectedRepos = allRepos;
-      }
+      selectedRepos = _projectSelectionService.getFilteredRepositories(allRepos);
       
       _projects.clear();
 
@@ -56,19 +48,17 @@ class ProjectService extends ChangeNotifier {
 
   Future<Project?> _loadProjectFromRepo(GitHubRepository repo) async {
     try {
-      // Fetch TODO.md directly from GitHub repository
       final todoContent = await _fetchTodoFromGitHub(repo);
       
       if (todoContent != null) {
         final project = _parseProjectContent(repo, todoContent);
         return project;
       } else {
-        // If no TODO.md found on GitHub, create a basic project without todos
         return Project(
           id: repo.fullName,
           name: repo.name,
           owner: repo.owner,
-          description: repo.description ?? '',
+          description: repo.description,
           repositoryUrl: repo.htmlUrl,
           repoName: repo.name,
           todos: [],
@@ -127,7 +117,7 @@ class ProjectService extends ChangeNotifier {
       id: repo.fullName,
       name: repo.name,
       owner: repo.owner,
-      description: repo.description ?? '',
+      description: repo.description,
       repositoryUrl: repo.htmlUrl,
       repoName: repo.name,
       todos: todos,
@@ -155,8 +145,8 @@ class ProjectService extends ChangeNotifier {
 
   Future<void> updateTodoFileOnGitHub(String owner, String repo, String content) async {
     try {
-      final fileName = '${repo}-todo.md';
-      final message = 'Update TODO file with proper formatting';
+      final fileName = '$repo-todo.md';
+      const message = 'Update TODO file with proper formatting';
       
       // Get current file SHA if it exists
       String? sha;

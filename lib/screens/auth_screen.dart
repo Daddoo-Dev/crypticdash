@@ -34,6 +34,10 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _checkExistingToken() async {
+    setState(() {
+      _isCheckingToken = true;
+    });
+
     try {
       final githubService = Provider.of<GitHubService>(context, listen: false);
       final hasValidToken = await githubService.hasValidToken();
@@ -41,9 +45,11 @@ class _AuthScreenState extends State<AuthScreen> {
       if (hasValidToken && mounted) {
         // Auto-login with existing token, use AppFlowService to determine next screen
         final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => nextScreen),
-        );
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => nextScreen),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error checking existing token: $e');
@@ -73,9 +79,11 @@ class _AuthScreenState extends State<AuthScreen> {
         if (mounted) {
           // Use AppFlowService to determine next screen
           final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => nextScreen),
-          );
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => nextScreen),
+            );
+          }
         }
       } else {
         if (mounted) {
@@ -115,17 +123,21 @@ class _AuthScreenState extends State<AuthScreen> {
       
       if (accessToken != null) {
         // OAuth succeeded, proceed with authentication
-        final githubService = Provider.of<GitHubService>(context, listen: false);
-        await githubService.setAccessToken(accessToken);
-        
-        final isConnected = await githubService.testConnection();
-        
-        if (isConnected && mounted) {
-          // Use AppFlowService to determine next screen
-          final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => nextScreen),
-          );
+        if (mounted) {
+          final githubService = Provider.of<GitHubService>(context, listen: false);
+          await githubService.setAccessToken(accessToken);
+          
+          final isConnected = await githubService.testConnection();
+          
+          if (isConnected && mounted) {
+            // Use AppFlowService to determine next screen
+            final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
+            if (mounted) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => nextScreen),
+              );
+            }
+          }
         }
       }
     } catch (e) {
@@ -159,7 +171,7 @@ class _AuthScreenState extends State<AuthScreen> {
         if (_isCheckingToken) {
           return Scaffold(
             body: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -205,7 +217,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
         return Scaffold(
           body: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -226,7 +238,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     onPressed: _toggleTheme,
                     tooltip: 'Switch Theme (${themeService.getThemeModeName()})',
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       foregroundColor: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
@@ -308,7 +320,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                     label: Text(_isOAuthLoading ? 'Connecting...' : 'Sign in with GitHub'),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
+                                  const Text(
                                     'Click to open GitHub and authorize the app',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -323,7 +335,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   // Divider
                                   Row(
                                     children: [
-                                      Expanded(child: Divider(color: AppThemes.neutralGrey)),
+                                      const Expanded(child: Divider(color: AppThemes.neutralGrey)),
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 16),
                                         child: Text(
@@ -333,7 +345,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                           ),
                                         ),
                                       ),
-                                      Expanded(child: Divider(color: AppThemes.neutralGrey)),
+                                      const Expanded(child: Divider(color: AppThemes.neutralGrey)),
                                     ],
                                   ),
                                   
@@ -370,7 +382,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                                   ElevatedButton(
                                     onPressed: _isLoading ? null : _authenticateWithToken,
-                                    style: AppThemes.secondaryButtonStyle ?? AppThemes.primaryButtonStyle,
+                                    style: AppThemes.secondaryButtonStyle,
                                     child: _isLoading
                                         ? const SizedBox(
                                             height: 20,

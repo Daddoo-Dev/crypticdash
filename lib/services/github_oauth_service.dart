@@ -5,9 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
-// Conditional import for mobile platforms only
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 class GitHubOAuthService {
   static String get _clientId => dotenv.env['GITHUB_CLIENT_ID'] ?? '';
   static String get _clientSecret => dotenv.env['GITHUB_CLIENT_SECRET'] ?? '';
@@ -192,18 +189,5 @@ class GitHubOAuthService {
     }
 
     return accessToken;
-  }
-
-  /// Generates a random string for state parameter
-  static String _generateRandomString(int length) {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = DateTime.now().millisecondsSinceEpoch;
-    final buffer = StringBuffer();
-    
-    for (int i = 0; i < length; i++) {
-      buffer.write(chars[random % chars.length]);
-    }
-    
-    return buffer.toString();
   }
 }

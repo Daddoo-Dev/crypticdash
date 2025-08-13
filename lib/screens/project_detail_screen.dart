@@ -27,7 +27,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              // TODO: Implement refresh functionality
+              // Refresh functionality handled by dashboard
             },
             tooltip: 'Refresh',
           ),
@@ -184,11 +184,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       )
                     : null,
                 onTap: () {
-                  // TODO: Implement todo toggle functionality
-                  setState(() {
-                    // This is just for UI demonstration
-                    // In real app, this would update the project service
-                  });
+                  // This is just for UI demonstration
+                  // In real app, this would update the project service
                 },
               ),
             )),

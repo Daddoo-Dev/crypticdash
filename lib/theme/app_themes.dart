@@ -11,14 +11,12 @@ class AppThemes {
         primary: const Color(0xFF1976D2),
         secondary: const Color(0xFF424242),
         surface: const Color(0xFFFAFAFA),
-        background: const Color(0xFFFFFFFF),
+        surfaceContainerHighest: const Color(0xFFFFFFFF),
         error: const Color(0xFFD32F2F),
         onPrimary: const Color(0xFFFFFFFF),
         onSecondary: const Color(0xFFFFFFFF),
         onSurface: const Color(0xFF1C1B1F), // MD3 standard dark text
-        onBackground: const Color(0xFF1C1B1F), // MD3 standard dark text
         onError: const Color(0xFFFFFFFF),
-        surfaceVariant: const Color(0xFFF3F3F3),
         onSurfaceVariant: const Color(0xFF49454F),
         outline: const Color(0xFF79747E),
         outlineVariant: const Color(0xFFCAC4D0),
@@ -137,14 +135,13 @@ class AppThemes {
         primary: const Color(0xFF90CAF9),
         secondary: const Color(0xFF9E9E9E),
         surface: const Color(0xFF1C1B1F), // MD3 standard dark surface
-        background: const Color(0xFF0F0F0F), // Slightly lighter than pure black
+        surfaceContainerLow: const Color(0xFF0F0F0F), // Slightly lighter than pure black
         error: const Color(0xFFEF5350),
         onPrimary: const Color(0xFF000000),
         onSecondary: const Color(0xFF000000),
         onSurface: const Color(0xFFE6E1E5), // MD3 standard light text
-        onBackground: const Color(0xFFE6E1E5), // MD3 standard light text
         onError: const Color(0xFF000000),
-        surfaceVariant: const Color(0xFF2D2D2D),
+        surfaceContainerHighest: const Color(0xFF2D2D2D),
         onSurfaceVariant: const Color(0xFFCAC4D0),
         outline: const Color(0xFF938F99),
         outlineVariant: const Color(0xFF49454F),

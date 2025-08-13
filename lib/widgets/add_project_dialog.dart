@@ -105,9 +105,9 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
             // Header
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppThemes.primaryBlue,
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
                 ),
@@ -190,7 +190,7 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
                                     repo.description.isNotEmpty 
                                         ? repo.description 
                                         : 'No description',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: AppThemes.neutralGrey,
                                       fontSize: 12,
                                     ),
