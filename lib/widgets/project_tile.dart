@@ -24,7 +24,7 @@ class ProjectTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -44,26 +44,26 @@ class ProjectTile extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh, size: 20),
+                    icon: const Icon(Icons.refresh, size: 18),
                     onPressed: onRefresh,
                     tooltip: 'Refresh',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                      minWidth: 28,
+                      minHeight: 28,
                     ),
                   ),
                 ],
               ),
               
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               
               // Repository Info
               Row(
                 children: [
                   Icon(
                     Icons.account_circle,
-                    size: 16,
+                    size: 14,
                     color: colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
@@ -72,6 +72,7 @@ class ProjectTile extends StatelessWidget {
                       project.owner,
                       style: AppThemes.bodyMedium.copyWith(
                         color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -80,7 +81,7 @@ class ProjectTile extends StatelessWidget {
                 ],
               ),
               
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               
               // Description
               if (project.description.isNotEmpty) ...[
@@ -88,11 +89,12 @@ class ProjectTile extends StatelessWidget {
                   project.description,
                   style: AppThemes.bodyMedium.copyWith(
                     color: colorScheme.onSurface,
+                    fontSize: 12,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
               ],
               
               // Progress Bar
@@ -106,6 +108,7 @@ class ProjectTile extends StatelessWidget {
                         'Progress',
                         style: AppThemes.labelLarge.copyWith(
                           color: colorScheme.onSurface,
+                          fontSize: 12,
                         ),
                       ),
                       Text(
@@ -113,11 +116,12 @@ class ProjectTile extends StatelessWidget {
                         style: AppThemes.labelLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurface,
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   LinearProgressIndicator(
                     value: project.progress / 100,
                     backgroundColor: colorScheme.outlineVariant,
@@ -130,7 +134,7 @@ class ProjectTile extends StatelessWidget {
                 ],
               ),
               
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
               
               // Stats Row
               Row(
@@ -165,7 +169,49 @@ class ProjectTile extends StatelessWidget {
                 ],
               ),
               
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
+              
+              // Top 5 Todos Section
+              if (project.todos.isNotEmpty) ...[
+                Text(
+                  'Top 5 Todos',
+                  style: AppThemes.labelLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ...project.todos
+                    .where((todo) => !todo.isCompleted)
+                    .take(5)
+                    .map((todo) => Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.radio_button_unchecked,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              todo.title,
+                              style: AppThemes.bodyMedium.copyWith(
+                                color: colorScheme.onSurface,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+              ],
+              
+              const SizedBox(height: 8),
               
               // Connection Status
               Row(
@@ -215,15 +261,16 @@ class ProjectTile extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 20,
+          size: 18,
           color: color ?? colorScheme.primary,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           value,
           style: AppThemes.titleMedium.copyWith(
             fontWeight: FontWeight.w600,
             color: color ?? colorScheme.primary,
+            fontSize: 14,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,
@@ -233,7 +280,7 @@ class ProjectTile extends StatelessWidget {
           label,
           style: AppThemes.bodyMedium.copyWith(
             color: colorScheme.onSurfaceVariant,
-            fontSize: 12,
+            fontSize: 10,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,

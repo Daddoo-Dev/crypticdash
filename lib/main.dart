@@ -5,8 +5,8 @@ import 'services/github_service.dart';
 import 'services/project_service.dart';
 import 'services/theme_service.dart';
 import 'services/project_selection_service.dart';
+import 'services/app_flow_service.dart';
 import 'theme/app_themes.dart';
-import 'screens/auth_screen.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -49,10 +49,45 @@ class CrypticDashApp extends StatelessWidget {
             theme: AppThemes.lightTheme,
             darkTheme: AppThemes.darkTheme,
             themeMode: themeService.themeMode,
-            home: const AuthScreen(),
+            home: const AppFlowWrapper(),
           );
         },
       ),
     );
+  }
+}
+
+class AppFlowWrapper extends StatefulWidget {
+  const AppFlowWrapper({super.key});
+
+  @override
+  State<AppFlowWrapper> createState() => _AppFlowWrapperState();
+}
+
+class _AppFlowWrapperState extends State<AppFlowWrapper> {
+  Widget _currentScreen = const Scaffold(
+    body: Center(
+      child: CircularProgressIndicator(),
+    ),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _determineInitialScreen();
+  }
+
+  Future<void> _determineInitialScreen() async {
+    final nextScreen = await AppFlowService.getInitialScreen(context);
+    if (mounted) {
+      setState(() {
+        _currentScreen = nextScreen;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _currentScreen;
   }
 }

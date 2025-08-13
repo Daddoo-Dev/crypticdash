@@ -1,4 +1,5 @@
 import '../models/project.dart';
+import 'package:flutter/foundation.dart'; // Added for debugPrint
 
 class MarkdownService {
   // Support multiple TODO file names
@@ -159,6 +160,7 @@ class MarkdownService {
       String nextMilestone = '';
       
       int currentSection = -1;
+      bool inPhaseSection = false;
       
       for (int i = 0; i < lines.length; i++) {
         final line = lines[i].trim();
@@ -168,16 +170,24 @@ class MarkdownService {
         // Check for headers
         if (line.startsWith('# ')) {
           projectName = line.substring(2).trim();
-        } else if (line.startsWith('## 📋 Project Overview')) {
+        } else if (line.startsWith('## ') && line.contains('Overview')) {
           currentSection = 0;
-        } else if (line.startsWith('## 🎯 Project Goals')) {
+          inPhaseSection = false;
+        } else if (line.startsWith('## ') && (line.contains('Goals') || line.contains('Todo List'))) {
           currentSection = 1;
-        } else if (line.startsWith('## 🚀 Development Phases')) {
+          inPhaseSection = false;
+        } else if (line.startsWith('## ') && line.contains('Phases')) {
           currentSection = 2;
-        } else if (line.startsWith('## 📊 Progress Tracking')) {
+          inPhaseSection = false;
+        } else if (line.startsWith('## ') && line.contains('Progress')) {
           currentSection = 3;
-        } else if (line.startsWith('## 📝 Notes & Updates')) {
+          inPhaseSection = false;
+        } else if (line.startsWith('## ') && line.contains('Notes')) {
           currentSection = 4;
+          inPhaseSection = false;
+        } else if (line.startsWith('## ') && line.contains('Tasks')) {
+          currentSection = 5;
+          inPhaseSection = false;
         } else if (line.startsWith('---')) {
           break;
         } else {
@@ -187,7 +197,8 @@ class MarkdownService {
               if (line.startsWith('**Repository**:') || 
                   line.startsWith('**Owner**:') || 
                   line.startsWith('**Language**:') ||
-                  line.startsWith('**Status**:')) {
+                  line.startsWith('**Status**:') ||
+                  line.startsWith('**Last Updated**:')) {
                 // Skip metadata lines
               } else if (line.isNotEmpty && !line.startsWith('**')) {
                 description += line + '\n';
@@ -195,7 +206,7 @@ class MarkdownService {
               break;
             case 1: // Project Goals
               if (line.startsWith('- [x] ')) {
-                // Completed goal - could be converted to a todo
+                // Completed goal
                 final title = line.substring(6).trim();
                 final todo = Todo(
                   id: _generateTodoId(title),
@@ -216,22 +227,43 @@ class MarkdownService {
                   completedAt: null,
                 );
                 todos.add(todo);
+              } else if (line.contains('% Complete')) {
+                // Parse progress from basic format like "## Todo List 0% Complete"
+                final progressMatch = RegExp(r'(\d+)% Complete').firstMatch(line);
+                if (progressMatch != null) {
+                  progress = double.tryParse(progressMatch.group(1) ?? '0') ?? 0.0;
+                }
               }
               break;
             case 2: // Development Phases
-              if (line.startsWith('### Phase') && line.contains('✅ COMPLETED')) {
-                // Extract phase name
-                final phaseMatch = RegExp(r'### Phase \d+: (.+?) ✅').firstMatch(line);
-                if (phaseMatch != null) {
-                  currentPhase = phaseMatch.group(1) ?? '';
+              if (line.startsWith('### Phase')) {
+                // Extract phase name and status
+                if (line.contains('✅ COMPLETED')) {
+                  final phaseMatch = RegExp(r'### Phase \d+: (.+?) ✅').firstMatch(line);
+                  if (phaseMatch != null) {
+                    currentPhase = phaseMatch.group(1) ?? '';
+                  }
+                  inPhaseSection = true;
+                } else if (line.contains('🚧 IN PROGRESS')) {
+                  final phaseMatch = RegExp(r'### Phase \d+: (.+?) 🚧').firstMatch(line);
+                  if (phaseMatch != null) {
+                    currentPhase = phaseMatch.group(1) ?? '';
+                  }
+                  inPhaseSection = true;
+                } else if (line.contains('📋 PLANNED')) {
+                  final phaseMatch = RegExp(r'### Phase \d+: (.+?) 📋').firstMatch(line);
+                  if (phaseMatch != null) {
+                    currentPhase = phaseMatch.group(1) ?? '';
+                  }
+                  inPhaseSection = true;
+                } else if (line.contains('🆕 NEW FEATURE')) {
+                  final phaseMatch = RegExp(r'### Phase \d+: (.+?) 🆕').firstMatch(line);
+                  if (phaseMatch != null) {
+                    currentPhase = phaseMatch.group(1) ?? '';
+                  }
+                  inPhaseSection = true;
                 }
-              } else if (line.startsWith('### Phase') && line.contains('🚧 IN PROGRESS')) {
-                // Extract phase name
-                final phaseMatch = RegExp(r'### Phase \d+: (.+?) 🚧').firstMatch(line);
-                if (phaseMatch != null) {
-                  currentPhase = phaseMatch.group(1) ?? '';
-                }
-              } else if (line.startsWith('- [x] ')) {
+              } else if (inPhaseSection && line.startsWith('- [x] ')) {
                 // Completed phase task
                 final title = line.substring(6).trim();
                 final todo = Todo(
@@ -242,7 +274,7 @@ class MarkdownService {
                   completedAt: DateTime.now(),
                 );
                 todos.add(todo);
-              } else if (line.startsWith('- [ ] ')) {
+              } else if (inPhaseSection && line.startsWith('- [ ] ')) {
                 // Pending phase task
                 final title = line.substring(6).trim();
                 final todo = Todo(
@@ -281,6 +313,43 @@ class MarkdownService {
                 notes += line + '\n';
               }
               break;
+            case 5: // Technical Tasks
+              if (line.startsWith('### ') && line.contains('✅ COMPLETED')) {
+                // Completed task category
+                inPhaseSection = true;
+              } else if (line.startsWith('### ') && line.contains('🚧 IN PROGRESS')) {
+                // In progress task category
+                inPhaseSection = true;
+              } else if (line.startsWith('### ') && line.contains('📋 PLANNED')) {
+                // Planned task category
+                inPhaseSection = true;
+              } else if (inPhaseSection && line.startsWith('- [x] ')) {
+                // Completed technical task
+                final title = line.substring(6).trim();
+                final todo = Todo(
+                  id: _generateTodoId(title),
+                  title: title,
+                  isCompleted: true,
+                  createdAt: DateTime.now(),
+                  completedAt: DateTime.now(),
+                );
+                todos.add(todo);
+              } else if (inPhaseSection && line.startsWith('- [ ] ')) {
+                // Pending technical task
+                final title = line.substring(6).trim();
+                final todo = Todo(
+                  id: _generateTodoId(title),
+                  title: title,
+                  isCompleted: false,
+                  createdAt: DateTime.now(),
+                  completedAt: null,
+                );
+                todos.add(todo);
+              } else if (inPhaseSection && line.startsWith('### ')) {
+                // New task category started, continue processing
+                continue;
+              }
+              break;
           }
         }
       }
@@ -315,8 +384,15 @@ class MarkdownService {
         return project.copyWith(notes: enhancedNotes.join('\n\n'));
       }
       
-      return project;
+      // Only return the project if we actually extracted todos
+      if (todos.isNotEmpty) {
+        return project;
+      } else {
+        // No todos found, return null to trigger fallback to basic parser
+        return null;
+      }
     } catch (e) {
+      print('Error parsing enhanced TODO markdown: $e');
       return null;
     }
   }
@@ -492,6 +568,7 @@ Project started on ${DateTime.now().toIso8601String()}
       if (trimmedLine.startsWith('- [ ] ') || trimmedLine.startsWith('- [x] ')) {
         final isCompleted = trimmedLine.startsWith('- [x] ');
         final title = trimmedLine.substring(6).trim();
+        
         final todo = Todo(
           id: _generateTodoId(title),
           title: title,
@@ -504,5 +581,58 @@ Project started on ${DateTime.now().toIso8601String()}
     }
     
     return todos;
+  }
+
+  // New method to generate properly formatted TODO content for the enhanced parser
+  static String generateFormattedTodoContent(String projectName, List<String> todos) {
+    final buffer = StringBuffer();
+    
+    buffer.writeln('# $projectName');
+    buffer.writeln();
+    
+    buffer.writeln('## 📋 Project Overview');
+    buffer.writeln('A development project managed through CrypticDash.');
+    buffer.writeln();
+    
+    buffer.writeln('## 🎯 Project Goals');
+    for (final todo in todos) {
+      buffer.writeln('- [ ] $todo');
+    }
+    buffer.writeln();
+    
+    buffer.writeln('## 🚀 Development Phases');
+    buffer.writeln('### Phase 1: Planning 📋');
+    buffer.writeln('- [ ] Project setup and planning');
+    buffer.writeln();
+    buffer.writeln('### Phase 2: Development 🚧');
+    buffer.writeln('- [ ] Core functionality development');
+    buffer.writeln();
+    buffer.writeln('### Phase 3: Testing 📋');
+    buffer.writeln('- [ ] Testing and quality assurance');
+    buffer.writeln();
+    buffer.writeln('### Phase 4: Documentation 📋');
+    buffer.writeln('- [ ] Documentation');
+    buffer.writeln();
+    buffer.writeln('### Phase 5: Deployment 📋');
+    buffer.writeln('- [ ] Deployment preparation');
+    buffer.writeln();
+    
+    buffer.writeln('## 📊 Progress Tracking');
+    buffer.writeln('Overall Progress: 0% Complete');
+    buffer.writeln('Current Phase: Phase 1 - Planning');
+    buffer.writeln('Next Milestone: Complete project setup');
+    buffer.writeln();
+    
+    buffer.writeln('## 📝 Notes & Updates');
+    buffer.writeln('Project started on ${DateTime.now().toIso8601String()}');
+    buffer.writeln();
+    
+    buffer.writeln('---');
+    buffer.writeln('Last updated: ${DateTime.now().toIso8601String()}');
+    buffer.writeln('Total todos: ${todos.length}');
+    buffer.writeln('Completed: 0');
+    buffer.writeln('Pending: ${todos.length}');
+    
+    return buffer.toString();
   }
 }

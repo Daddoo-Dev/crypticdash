@@ -5,13 +5,16 @@ import '../models/github_repository.dart';
 class ProjectSelectionService extends ChangeNotifier {
   static const String _selectedProjectsKey = 'selected_projects';
   static const String _hasCompletedSetupKey = 'has_completed_setup';
+  static const String _lastSetupDateKey = 'last_setup_date';
   
   Set<int> _selectedProjectIds = {};
   bool _hasCompletedSetup = false;
+  DateTime? _lastSetupDate;
   VoidCallback? _onSelectionChanged;
   
   Set<int> get selectedProjectIds => _selectedProjectIds;
   bool get hasCompletedSetup => _hasCompletedSetup;
+  DateTime? get lastSetupDate => _lastSetupDate;
   
   ProjectSelectionService() {
     _loadSettings();
@@ -26,9 +29,11 @@ class ProjectSelectionService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final selectedIds = prefs.getStringList(_selectedProjectsKey) ?? [];
       final hasSetup = prefs.getBool(_hasCompletedSetupKey) ?? false;
+      final lastSetupString = prefs.getString(_lastSetupDateKey);
       
       _selectedProjectIds = selectedIds.map((id) => int.parse(id)).toSet();
       _hasCompletedSetup = hasSetup;
+      _lastSetupDate = lastSetupString != null ? DateTime.tryParse(lastSetupString) : null;
       notifyListeners();
     } catch (e) {
       // Handle error silently, use defaults
@@ -41,6 +46,9 @@ class ProjectSelectionService extends ChangeNotifier {
       final stringIds = _selectedProjectIds.map((id) => id.toString()).toList();
       await prefs.setStringList(_selectedProjectsKey, stringIds);
       await prefs.setBool(_hasCompletedSetupKey, _hasCompletedSetup);
+      if (_lastSetupDate != null) {
+        await prefs.setString(_lastSetupDateKey, _lastSetupDate!.toIso8601String());
+      }
       
       // Notify other services that selection has changed
       _onSelectionChanged?.call();
@@ -83,15 +91,27 @@ class ProjectSelectionService extends ChangeNotifier {
   
   Future<void> markSetupComplete() async {
     _hasCompletedSetup = true;
+    _lastSetupDate = DateTime.now();
     notifyListeners();
     await _saveSettings();
   }
   
   Future<void> resetSetup() async {
     _hasCompletedSetup = false;
+    _lastSetupDate = null;
     _selectedProjectIds.clear();
     notifyListeners();
     await _saveSettings();
+  }
+  
+  // New method to check if user should see setup screen
+  bool shouldShowSetupScreen() {
+    return !_hasCompletedSetup || _selectedProjectIds.isEmpty;
+  }
+  
+  // New method to check if user has any projects selected
+  bool hasAnyProjectsSelected() {
+    return _selectedProjectIds.isNotEmpty;
   }
   
   List<GitHubRepository> getFilteredRepositories(List<GitHubRepository> allRepositories) {

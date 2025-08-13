@@ -70,7 +70,11 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
 
   void _proceedToDashboard() {
     final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
-    projectSelectionService.markSetupComplete();
+    
+    // Only mark setup as complete if user has selected at least one project
+    if (projectSelectionService.selectedProjectCount > 0) {
+      projectSelectionService.markSetupComplete();
+    }
     
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const DashboardScreen()),
@@ -78,6 +82,13 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
   }
 
   void _saveAndReturn() {
+    final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
+    
+    // If user has selected projects and setup wasn't complete, mark it as complete
+    if (projectSelectionService.selectedProjectCount > 0 && !projectSelectionService.hasCompletedSetup) {
+      projectSelectionService.markSetupComplete();
+    }
+    
     Navigator.of(context).pop();
   }
 

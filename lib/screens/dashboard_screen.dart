@@ -9,6 +9,8 @@ import '../services/theme_service.dart';
 import '../screens/project_selection_screen.dart';
 import '../services/github_service.dart'; // Added import for GitHubService
 import '../screens/auth_screen.dart'; // Added import for AuthScreen
+import '../services/project_selection_service.dart'; // Added import for ProjectSelectionService
+import '../screens/project_detail_screen.dart'; // Added import for ProjectDetailScreen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -72,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final projectService = Provider.of<ProjectService>(context, listen: false);
     List<Project> projects = projectService.projects;
 
-    // Apply status filter
+    // Apply connection filter
     if (_filterStatus == 'connected') {
       projects = projects.where((p) => p.isConnected).toList();
     } else if (_filterStatus == 'disconnected') {
@@ -85,6 +87,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return projects;
+  }
+
+  SliverGridDelegate _getGridDelegate(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
+    // Calculate optimal card width based on screen size
+    double maxCardWidth;
+    double aspectRatio;
+    
+    if (screenWidth < 600) {
+      // Small screens: single column
+      maxCardWidth = screenWidth - 32; // Full width minus padding
+      aspectRatio = 0.9;
+    } else if (screenWidth < 900) {
+      // Medium screens: 2 columns
+      maxCardWidth = (screenWidth - 48) / 2; // Account for spacing
+      aspectRatio = 0.85;
+    } else if (screenWidth < 1200) {
+      // Large screens: 3 columns
+      maxCardWidth = (screenWidth - 64) / 3;
+      aspectRatio = 0.8;
+    } else {
+      // Extra large screens: 4+ columns
+      maxCardWidth = (screenWidth - 80) / 4;
+      aspectRatio = 0.75;
+    }
+    
+    // Ensure minimum and maximum card sizes
+    maxCardWidth = maxCardWidth.clamp(280.0, 500.0);
+    
+    return SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: maxCardWidth,
+      childAspectRatio: aspectRatio,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+    );
   }
 
   void _toggleTheme() {
@@ -278,12 +317,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onRefresh: _loadProjects,
                       child: GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.0, // Changed from 1.2 to 1.0 to give more height
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                        ),
+                        gridDelegate: _getGridDelegate(context),
                         itemCount: projects.length,
                         itemBuilder: (context, index) {
                           final project = projects[index];
@@ -319,19 +353,109 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openProjectDetails(Project project) {
-    // TODO: Navigate to project detail screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening ${project.name}...'),
-        duration: const Duration(seconds: 1),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ProjectDetailScreen(project: project),
       ),
     );
   }
 
   void _showProjectManagement(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const ProjectSelectionScreen(isSetupMode: false)),
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Project Management',
+              style: AppThemes.headlineSmall.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Repository Selection'),
+              subtitle: const Text('Select or deselect repositories to monitor'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const ProjectSelectionScreen(isSetupMode: false)),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text('Reset Setup'),
+              subtitle: const Text('Start over with repository selection'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showResetSetupDialog(context);
+              },
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  void _showResetSetupDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Setup'),
+        content: const Text(
+          'This will clear your current repository selection and take you back to the initial setup. '
+          'Are you sure you want to continue?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _resetSetup();
+            },
+            style: AppThemes.primaryButtonStyle,
+            child: const Text('Reset Setup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _resetSetup() async {
+    try {
+      final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
+      await projectSelectionService.resetSetup();
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ProjectSelectionScreen(isSetupMode: true)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reset setup: $e'),
+            backgroundColor: AppThemes.errorRed,
+          ),
+        );
+      }
+    }
   }
 
   void _showLogoutDialog(BuildContext context) {

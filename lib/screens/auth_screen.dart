@@ -4,8 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/github_service.dart';
 import '../services/github_oauth_service.dart';
 import '../services/theme_service.dart';
+import '../services/app_flow_service.dart';
 import '../theme/app_themes.dart';
-import 'project_selection_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -39,9 +39,10 @@ class _AuthScreenState extends State<AuthScreen> {
       final hasValidToken = await githubService.hasValidToken();
       
       if (hasValidToken && mounted) {
-        // Auto-login with existing token
+        // Auto-login with existing token, use AppFlowService to determine next screen
+        final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ProjectSelectionScreen()),
+          MaterialPageRoute(builder: (context) => nextScreen),
         );
       }
     } catch (e) {
@@ -70,8 +71,10 @@ class _AuthScreenState extends State<AuthScreen> {
       
       if (isConnected) {
         if (mounted) {
+          // Use AppFlowService to determine next screen
+          final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const ProjectSelectionScreen()),
+            MaterialPageRoute(builder: (context) => nextScreen),
           );
         }
       } else {
@@ -118,8 +121,10 @@ class _AuthScreenState extends State<AuthScreen> {
         final isConnected = await githubService.testConnection();
         
         if (isConnected && mounted) {
+          // Use AppFlowService to determine next screen
+          final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const ProjectSelectionScreen()),
+            MaterialPageRoute(builder: (context) => nextScreen),
           );
         }
       }

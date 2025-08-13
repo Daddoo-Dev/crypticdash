@@ -103,7 +103,7 @@ class GitHubService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> reposJson = json.decode(response.body);
-        return reposJson.map((json) => GitHubRepository.fromJson(json)).toList();
+        return reposJson.map((repo) => GitHubRepository.fromJson(repo)).toList();
       } else {
         throw Exception('Failed to fetch repositories: ${response.statusCode}');
       }
@@ -113,7 +113,7 @@ class GitHubService extends ChangeNotifier {
     }
   }
 
-  Future<String> getFileContent(String owner, String repo, String path) async {
+  Future<String?> getFileContent(String owner, String repo, String path) async {
     if (_accessToken == null) {
       throw Exception('No access token provided');
     }
@@ -128,16 +128,43 @@ class GitHubService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> content = json.decode(response.body);
-        final String encodedContent = content['content'] as String;
-        return utf8.decode(base64.decode(encodedContent));
+        final Map<String, dynamic> fileJson = json.decode(response.body);
+        debugPrint('GitHub API response for $path: ${fileJson.keys}');
+        
+        if (fileJson['type'] == 'file' && fileJson['content'] != null) {
+          final encodedContent = fileJson['content'] as String;
+          debugPrint('Content length: ${encodedContent.length}');
+          
+          try {
+            // Clean the base64 string by removing newlines and spaces
+            final cleanContent = encodedContent.replaceAll(RegExp(r'[\n\r\s]'), '');
+            debugPrint('Cleaned content length: ${cleanContent.length}');
+            
+            // Decode base64 content
+            final content = utf8.decode(base64.decode(cleanContent));
+            debugPrint('Successfully decoded content, length: ${content.length}');
+            return content;
+          } catch (decodeError) {
+            debugPrint('Base64 decode error: $decodeError');
+            debugPrint('Raw content: ${encodedContent.substring(0, 100)}...');
+            return null;
+          }
+        }
+      } else if (response.statusCode == 404) {
+        // File not found
+        debugPrint('File $path not found (404)');
+        return null;
       } else {
-        return '';
+        debugPrint('Failed to fetch file $path: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
+        return null;
       }
     } catch (e) {
-      debugPrint('Error fetching file content: $e');
-      return '';
+      debugPrint('Error fetching file $path: $e');
+      return null;
     }
+    
+    return null;
   }
 
   Future<String?> getFileSha(String owner, String repo, String path) async {

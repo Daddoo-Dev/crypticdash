@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:path_provider/path_provider.dart';
 import '../models/project.dart';
 import '../models/github_repository.dart';
 import '../services/github_service.dart';
@@ -12,7 +10,6 @@ class ProjectService extends ChangeNotifier {
   final GitHubService _githubService;
   final ProjectSelectionService _projectSelectionService;
   final List<Project> _projects = [];
-  final Map<String, String> _projectPaths = {};
 
   ProjectService(this._githubService, this._projectSelectionService) {
     // Set up callback to refresh projects when selection changes
@@ -42,7 +39,6 @@ class ProjectService extends ChangeNotifier {
       }
       
       _projects.clear();
-      _projectPaths.clear();
 
       for (final repo in selectedRepos) {
         final project = await _loadProjectFromRepo(repo);
@@ -60,104 +56,58 @@ class ProjectService extends ChangeNotifier {
 
   Future<Project?> _loadProjectFromRepo(GitHubRepository repo) async {
     try {
-      final localPath = await _getLocalRepoPath(repo);
-      if (localPath == null) return null;
-
-      // Look for existing TODO files with different names
-      final todoFile = await _findExistingTodoFile(localPath, repo);
-      if (todoFile == null) {
-        // Create initial TODO.md if no existing file found
-        await _createInitialTodoFile(repo, localPath);
+      // Fetch TODO.md directly from GitHub repository
+      final todoContent = await _fetchTodoFromGitHub(repo);
+      
+      if (todoContent != null) {
+        final project = _parseProjectContent(repo, todoContent);
+        return project;
+      } else {
+        // If no TODO.md found on GitHub, create a basic project without todos
+        return Project(
+          id: repo.fullName,
+          name: repo.name,
+          owner: repo.owner,
+          description: repo.description ?? '',
+          repositoryUrl: repo.htmlUrl,
+          repoName: repo.name,
+          todos: [],
+          notes: '',
+          lastUpdated: DateTime.now(),
+          isConnected: true,
+        );
       }
-
-      final project = await _parseProjectFromTodoFile(repo, localPath);
-      _projectPaths[repo.fullName] = localPath;
-      return project;
     } catch (e) {
       debugPrint('Error loading project ${repo.name}: $e');
       return null;
     }
   }
 
-  Future<File?> _findExistingTodoFile(String localPath, GitHubRepository repo) async {
-    // Look for files in order of preference
-    final possibleNames = [
-      '${repo.name.toLowerCase()}-todo.md', // Our new format
-      'TODO.md',                           // Standard format
-      'PROJECT.md',                        // Legacy format
-    ];
-
-    for (final name in possibleNames) {
-      final file = File('$localPath/$name');
-      if (await file.exists()) {
-        debugPrint('Found existing TODO file: $name for ${repo.name}');
-        return file;
-      }
-    }
-
-    return null;
-  }
-
-  Future<String?> _getLocalRepoPath(GitHubRepository repo) async {
+  Future<String?> _fetchTodoFromGitHub(GitHubRepository repo) async {
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final projectsDir = Directory('${appDir.path}/devdash_projects');
+      // Try to fetch {reponame}-todo.md from the repository first
+      final todoFileName = '${repo.name}-todo.md';
+      final todoContent = await _githubService.getFileContent(repo.owner, repo.name, todoFileName);
+      if (todoContent != null) {
+        debugPrint('Found $todoFileName on GitHub for ${repo.name}');
+        return todoContent;
+      }
       
-      if (!await projectsDir.exists()) {
-        await projectsDir.create(recursive: true);
-      }
-
-      final repoDir = Directory('${projectsDir.path}/${repo.name}');
-      if (!await repoDir.exists()) {
-        // Create directory structure for now (simplified)
-        await repoDir.create(recursive: true);
-      }
-
-      return repoDir.path;
-    } catch (e) {
-      debugPrint('Error getting local repo path: $e');
-      return null;
-    }
-  }
-
-  Future<void> _createInitialTodoFile(GitHubRepository repo, String localPath) async {
-    try {
-      // Create the TODO file with our new naming convention
-      final fileName = '${repo.name.toLowerCase()}-todo.md';
-      final todoContent = MarkdownService.generateInitialTodoContent(repo.name);
-      final todoFile = File('$localPath/$fileName');
-      await todoFile.writeAsString(todoContent);
-      
-      debugPrint('Created initial $fileName for ${repo.name}');
-    } catch (e) {
-      debugPrint('Error creating initial TODO file: $e');
-      rethrow;
-    }
-  }
-
-  Future<Project> _parseProjectFromTodoFile(GitHubRepository repo, String localPath) async {
-    try {
-      // Find the existing TODO file
-      final todoFile = await _findExistingTodoFile(localPath, repo);
-      if (todoFile == null) {
-        // This shouldn't happen since we create files in _loadProjectFromRepo
-        // but let's handle it gracefully
-        debugPrint('No TODO file found for ${repo.name}, creating one now');
-        await _createInitialTodoFile(repo, localPath);
-        final newFile = await _findExistingTodoFile(localPath, repo);
-        if (newFile == null) {
-          throw Exception('Failed to create TODO file for ${repo.name}');
+      // Try alternative names
+      final alternativeNames = ['TODO.md', 'PROJECT.md', 'README.md'];
+      for (final fileName in alternativeNames) {
+        final content = await _githubService.getFileContent(repo.owner, repo.name, fileName);
+        if (content != null) {
+          debugPrint('Found $fileName on GitHub for ${repo.name}');
+          return content;
         }
-        final content = await newFile.readAsString();
-        return _parseProjectContent(repo, content);
       }
-
-      final content = await todoFile.readAsString();
-      debugPrint('Parsing TODO file: ${todoFile.path} for ${repo.name}');
-      return _parseProjectContent(repo, content);
+      
+      debugPrint('No TODO files found on GitHub for ${repo.name}');
+      return null;
     } catch (e) {
-      debugPrint('Error parsing project from TODO file: $e');
-      rethrow;
+      debugPrint('Error fetching TODO from GitHub for ${repo.name}: $e');
+      return null;
     }
   }
 
@@ -193,13 +143,6 @@ class ProjectService extends ChangeNotifier {
       final todo = project.todos.firstWhere((t) => t.id == todoId);
       todo.isCompleted = isCompleted;
 
-      // Update the local TODO.md file
-      final localPath = _projectPaths[projectId];
-      if (localPath != null) {
-        await _updateTodoFile(project, localPath);
-        debugPrint('Updated TODO.md for project: ${project.name}');
-      }
-
       // Update project stats
       project.lastUpdated = DateTime.now();
 
@@ -210,53 +153,35 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  Future<void> _updateTodoFile(Project project, String localPath) async {
+  Future<void> updateTodoFileOnGitHub(String owner, String repo, String content) async {
     try {
-      final todoContent = MarkdownService.generateTodoContent(project.todos);
+      final fileName = '${repo}-todo.md';
+      final message = 'Update TODO file with proper formatting';
       
-      // Use the project name to determine the correct filename
-      final fileName = '${project.repoName.toLowerCase()}-todo.md';
-      final todoFile = File('$localPath/$fileName');
-      
-      // If the named file doesn't exist, try to find an existing TODO file
-      if (!await todoFile.exists()) {
-        final existingFile = await _findExistingTodoFile(localPath, 
-          GitHubRepository(
-            id: 0, // Dummy values for filename lookup
-            name: project.repoName,
-            fullName: project.id,
-            description: project.description,
-            htmlUrl: project.repositoryUrl,
-            cloneUrl: '',
-            sshUrl: '',
-            isPrivate: false,
-            isFork: false,
-            language: '',
-            stargazersCount: 0,
-            watchersCount: 0,
-            forksCount: 0,
-            openIssuesCount: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            defaultBranch: 'main',
-            permissions: {},
-          )
-        );
-        
-        if (existingFile != null) {
-          // Update the existing file
-          await existingFile.writeAsString(todoContent);
-          debugPrint('Updated existing TODO file: ${existingFile.path}');
-          return;
-        }
+      // Get current file SHA if it exists
+      String? sha;
+      try {
+        sha = await _githubService.getFileSha(owner, repo, fileName);
+      } catch (e) {
+        // File doesn't exist, will create new one
       }
       
-      // Update or create the named file
-      await todoFile.writeAsString(todoContent);
-      debugPrint('Updated TODO file: $fileName');
+      final success = await _githubService.createOrUpdateFile(
+        owner, 
+        repo, 
+        fileName, 
+        content, 
+        message,
+        sha: sha,
+      );
+      
+      if (success) {
+        debugPrint('Successfully updated $fileName on GitHub');
+      } else {
+        debugPrint('Failed to update $fileName on GitHub');
+      }
     } catch (e) {
-      debugPrint('Error updating TODO file: $e');
-      rethrow;
+      debugPrint('Error updating TODO file on GitHub: $e');
     }
   }
 
@@ -286,7 +211,6 @@ class ProjectService extends ChangeNotifier {
   Future<void> removeProject(String projectId) async {
     try {
       _projects.removeWhere((p) => p.id == projectId);
-      _projectPaths.remove(projectId);
       notifyListeners();
     } catch (e) {
       debugPrint('Error removing project: $e');
