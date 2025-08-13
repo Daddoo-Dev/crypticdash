@@ -55,7 +55,18 @@ CrypticDash is a comprehensive dashboard application designed to help developers
 - [x] Error handling and logging
 - [x] Documentation updates
 
-### Phase 5: Testing & Quality Assurance 📋 PLANNED
+### Phase 5: AI-Powered Project Analysis 🆕 NEW FEATURE
+- [ ] AI model integration (local Phi-2/Mistral 7B)
+- [ ] Repository code analysis and parsing
+- [ ] Automated TODO.md generation with AI insights
+- [ ] "Yeti Review" mascot-driven feedback system
+- [ ] Project structure and gap analysis
+- [ ] Missing tests and documentation detection
+- [ ] AI-generated task suggestions and categorization
+- [ ] Local model bundling and optimization
+- [ ] Integration with existing TODO.md workflow
+
+### Phase 6: Testing & Quality Assurance 📋 PLANNED
 - [ ] Unit testing implementation
 - [ ] Integration testing
 - [ ] User acceptance testing
@@ -133,13 +144,13 @@ CrypticDash is a comprehensive dashboard application designed to help developers
 
 ## 📊 Progress Tracking
 
-**Overall Progress**: 75% Complete
+**Overall Progress**: 70% Complete
 
-**Completed Tasks**: 45 / 60
+**Completed Tasks**: 42 / 60
 
 **Current Phase**: Phase 4 - Feature Development
 
-**Next Milestone**: Complete testing implementation and prepare for deployment
+**Next Milestone**: Implement AI-powered project analysis and complete testing
 
 ---
 
@@ -166,6 +177,15 @@ CrypticDash is a comprehensive dashboard application designed to help developers
 - [x] Local storage and caching
 - [ ] Real-time sync with GitHub
 - [ ] Batch operations
+
+### AI-Powered Project Analysis 🆕 NEW FEATURE
+- [ ] Local AI model integration (Phi-2/Mistral 7B)
+- [ ] Automated repository analysis
+- [ ] AI-generated TODO.md files
+- [ ] "Yeti Review" mascot feedback system
+- [ ] Project gap detection and suggestions
+- [ ] Missing tests and documentation identification
+- [ ] Smart task categorization and prioritization
 
 ### User Experience ✅ COMPLETED
 - [x] Light and dark theme switching
@@ -194,6 +214,10 @@ CrypticDash is a comprehensive dashboard application designed to help developers
 - GitHub token persistence implemented
 - Logout functionality added to dashboard
 - TODO.md template created for project management
+- **NEW: AI-Powered Project Analysis feature added to roadmap**
+  - Local AI model integration for automated TODO.md generation
+  - "Yeti Review" mascot-driven feedback system
+  - Repository gap analysis and smart task suggestions
 
 ### 2024-12-18
 - Theme switching system implemented
@@ -235,12 +259,18 @@ CrypticDash is a comprehensive dashboard application designed to help developers
    - Implement integration tests
    - Add widget tests for UI components
 
-2. **Finalize Todo Management**
+2. **AI-Powered Project Analysis (NEW!)**
+   - Research and select local AI model (Phi-2/Mistral 7B)
+   - Design repository analysis workflow
+   - Implement "Yeti Review" mascot system
+   - Create AI-generated TODO.md templates
+
+3. **Finalize Todo Management**
    - Complete real-time GitHub sync
    - Add batch operations
    - Implement conflict resolution
 
-3. **Performance Optimization**
+4. **Performance Optimization**
    - Add caching strategies
    - Optimize API calls
    - Implement lazy loading

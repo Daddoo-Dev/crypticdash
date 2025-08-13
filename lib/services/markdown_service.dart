@@ -1,9 +1,24 @@
 import '../models/project.dart';
 
 class MarkdownService {
-  static const String _projectFileName = 'PROJECT.md';
+  // Support multiple TODO file names
+  static const List<String> _projectFileNames = [
+    'TODO.md',
+    'PROJECT.md',
+  ];
   
-  static String getProjectFileName() => _projectFileName;
+  // Get the primary project file name
+  static String getProjectFileName() => _projectFileNames.first;
+  
+  // Get all supported project file names
+  static List<String> getProjectFileNames() => List.from(_projectFileNames);
+  
+  // Check if a filename is a valid project file
+  static bool isValidProjectFile(String filename) {
+    final lowerFilename = filename.toLowerCase();
+    return _projectFileNames.any((name) => lowerFilename == name.toLowerCase()) ||
+           lowerFilename.endsWith('-todo.md');
+  }
 
   static String generateProjectMarkdown(Project project) {
     final buffer = StringBuffer();
@@ -126,6 +141,181 @@ class MarkdownService {
         lastUpdated: DateTime.now(),
         isConnected: true,
       );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // New method to parse our enhanced TODO format
+  static Project? parseEnhancedTodoMarkdown(String markdown, String repoName, String owner) {
+    try {
+      final lines = markdown.split('\n');
+      String projectName = repoName;
+      String description = '';
+      List<Todo> todos = [];
+      String notes = '';
+      double progress = 0.0;
+      String currentPhase = '';
+      String nextMilestone = '';
+      
+      int currentSection = -1;
+      
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i].trim();
+        
+        if (line.isEmpty) continue;
+        
+        // Check for headers
+        if (line.startsWith('# ')) {
+          projectName = line.substring(2).trim();
+        } else if (line.startsWith('## 📋 Project Overview')) {
+          currentSection = 0;
+        } else if (line.startsWith('## 🎯 Project Goals')) {
+          currentSection = 1;
+        } else if (line.startsWith('## 🚀 Development Phases')) {
+          currentSection = 2;
+        } else if (line.startsWith('## 📊 Progress Tracking')) {
+          currentSection = 3;
+        } else if (line.startsWith('## 📝 Notes & Updates')) {
+          currentSection = 4;
+        } else if (line.startsWith('---')) {
+          break;
+        } else {
+          // Process content based on current section
+          switch (currentSection) {
+            case 0: // Project Overview
+              if (line.startsWith('**Repository**:') || 
+                  line.startsWith('**Owner**:') || 
+                  line.startsWith('**Language**:') ||
+                  line.startsWith('**Status**:')) {
+                // Skip metadata lines
+              } else if (line.isNotEmpty && !line.startsWith('**')) {
+                description += line + '\n';
+              }
+              break;
+            case 1: // Project Goals
+              if (line.startsWith('- [x] ')) {
+                // Completed goal - could be converted to a todo
+                final title = line.substring(6).trim();
+                final todo = Todo(
+                  id: _generateTodoId(title),
+                  title: title,
+                  isCompleted: true,
+                  createdAt: DateTime.now(),
+                  completedAt: DateTime.now(),
+                );
+                todos.add(todo);
+              } else if (line.startsWith('- [ ] ')) {
+                // Pending goal
+                final title = line.substring(6).trim();
+                final todo = Todo(
+                  id: _generateTodoId(title),
+                  title: title,
+                  isCompleted: false,
+                  createdAt: DateTime.now(),
+                  completedAt: null,
+                );
+                todos.add(todo);
+              }
+              break;
+            case 2: // Development Phases
+              if (line.startsWith('### Phase') && line.contains('✅ COMPLETED')) {
+                // Extract phase name
+                final phaseMatch = RegExp(r'### Phase \d+: (.+?) ✅').firstMatch(line);
+                if (phaseMatch != null) {
+                  currentPhase = phaseMatch.group(1) ?? '';
+                }
+              } else if (line.startsWith('### Phase') && line.contains('🚧 IN PROGRESS')) {
+                // Extract phase name
+                final phaseMatch = RegExp(r'### Phase \d+: (.+?) 🚧').firstMatch(line);
+                if (phaseMatch != null) {
+                  currentPhase = phaseMatch.group(1) ?? '';
+                }
+              } else if (line.startsWith('- [x] ')) {
+                // Completed phase task
+                final title = line.substring(6).trim();
+                final todo = Todo(
+                  id: _generateTodoId(title),
+                  title: title,
+                  isCompleted: true,
+                  createdAt: DateTime.now(),
+                  completedAt: DateTime.now(),
+                );
+                todos.add(todo);
+              } else if (line.startsWith('- [ ] ')) {
+                // Pending phase task
+                final title = line.substring(6).trim();
+                final todo = Todo(
+                  id: _generateTodoId(title),
+                  title: title,
+                  isCompleted: false,
+                  createdAt: DateTime.now(),
+                  completedAt: null,
+                );
+                todos.add(todo);
+              }
+              break;
+            case 3: // Progress Tracking
+              if (line.contains('Overall Progress')) {
+                final progressMatch = RegExp(r'(\d+)% Complete').firstMatch(line);
+                if (progressMatch != null) {
+                  progress = double.tryParse(progressMatch.group(1) ?? '0') ?? 0.0;
+                }
+              } else if (line.contains('Current Phase')) {
+                final phaseMatch = RegExp(r'Current Phase.*?Phase \d+ - (.+?)$').firstMatch(line);
+                if (phaseMatch != null) {
+                  currentPhase = phaseMatch.group(1) ?? '';
+                }
+              } else if (line.contains('Next Milestone')) {
+                final milestoneMatch = RegExp(r'Next Milestone.*?([^.]+)').firstMatch(line);
+                if (milestoneMatch != null) {
+                  nextMilestone = milestoneMatch.group(1)?.trim() ?? '';
+                }
+              }
+              break;
+            case 4: // Notes & Updates
+              if (line.startsWith('### ')) {
+                // Date header
+                notes += '\n${line}\n';
+              } else if (line.startsWith('- ') && line.isNotEmpty) {
+                notes += line + '\n';
+              }
+              break;
+          }
+        }
+      }
+      
+      // Clean up trailing newlines
+      description = description.trim();
+      notes = notes.trim();
+      
+      // Create enhanced project with additional metadata
+      final project = Project(
+        id: _generateProjectId(owner, repoName),
+        name: projectName,
+        description: description,
+        repositoryUrl: 'https://github.com/$owner/$repoName',
+        owner: owner,
+        repoName: repoName,
+        todos: todos,
+        notes: notes,
+        lastUpdated: DateTime.now(),
+        isConnected: true,
+      );
+      
+      // Store additional metadata in notes if available
+      if (currentPhase.isNotEmpty || nextMilestone.isNotEmpty) {
+        final enhancedNotes = <String>[];
+        if (notes.isNotEmpty) enhancedNotes.add(notes);
+        if (currentPhase.isNotEmpty) enhancedNotes.add('Current Phase: $currentPhase');
+        if (nextMilestone.isNotEmpty) enhancedNotes.add('Next Milestone: $nextMilestone');
+        if (progress > 0) enhancedNotes.add('Overall Progress: ${progress.toStringAsFixed(0)}%');
+        
+        // Update the project with enhanced notes
+        return project.copyWith(notes: enhancedNotes.join('\n\n'));
+      }
+      
+      return project;
     } catch (e) {
       return null;
     }
