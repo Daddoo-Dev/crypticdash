@@ -105,10 +105,10 @@ class ProjectService extends ChangeNotifier {
         }
       }
       
-      debugPrint('No TODO files found on GitHub for ${repo.name}');
+      debugPrint('No to-do files found on GitHub for ${repo.name}');
       return null;
     } catch (e) {
-      debugPrint('Error fetching TODO from GitHub for ${repo.name}: $e');
+      debugPrint('Error fetching to-do from GitHub for ${repo.name}: $e');
       return null;
     }
   }
@@ -126,13 +126,13 @@ class ProjectService extends ChangeNotifier {
     // Try enhanced parsing first (our new format)
     final enhancedProject = MarkdownService.parseEnhancedTodoMarkdown(content, owner, repoName);
     if (enhancedProject != null) {
-      debugPrint('Successfully parsed enhanced TODO format for ${repo.name}');
+      debugPrint('Successfully parsed enhanced to-do format for ${repo.name}');
       return enhancedProject;
     }
 
     // Fallback to standard parsing
     final todos = MarkdownService.parseTodosFromMarkdown(content);
-    debugPrint('Falling back to standard TODO parsing for ${repo.name}');
+    debugPrint('Falling back to standard to-do parsing for ${repo.name}');
 
     return Project(
       id: repo.fullName,
@@ -159,7 +159,7 @@ class ProjectService extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('Error updating todo status: $e');
+      debugPrint('Error updating to-do status: $e');
       rethrow;
     }
   }
@@ -167,7 +167,7 @@ class ProjectService extends ChangeNotifier {
   Future<void> updateTodoFileOnGitHub(String owner, String repo, String content) async {
     try {
       final fileName = '$repo-todo.md';
-      const message = 'Update TODO file with proper formatting';
+      const message = 'Update to-do file with proper formatting';
       
       // Get current file SHA if it exists
       String? sha;
@@ -192,7 +192,7 @@ class ProjectService extends ChangeNotifier {
         debugPrint('Failed to update $fileName on GitHub');
       }
     } catch (e) {
-      debugPrint('Error updating TODO file on GitHub: $e');
+      debugPrint('Error updating to-do file on GitHub: $e');
     }
   }
 

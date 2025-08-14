@@ -171,10 +171,10 @@ class ProjectTile extends StatelessWidget {
               
               const SizedBox(height: 6),
               
-              // Top 5 Todos Section
+              // Top 5 To-dos Section
               if (project.todos.isNotEmpty) ...[
                 Text(
-                  'Top 5 Todos',
+                  'Top 5 To-dos',
                   style: AppThemes.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
@@ -184,7 +184,6 @@ class ProjectTile extends StatelessWidget {
                 const SizedBox(height: 4), // Reduced spacing
                 ...project.todos
                     .where((todo) => !todo.isCompleted)
-                    .toList()
                     .take(5)
                     .map((todo) => Padding(
                       padding: const EdgeInsets.only(bottom: 2), // Reduced spacing

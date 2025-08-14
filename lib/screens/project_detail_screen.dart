@@ -20,13 +20,13 @@ class ProjectDetailScreen extends StatefulWidget {
 
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   String _filterType = 'All'; // All, Completed, Pending
-  bool _isUpdating = false; // Track if we're updating a todo
+  bool _isUpdating = false; // Track if we're updating a to-do
   String _lastError = ''; // Store the last error for display
   
   List<Todo> get _filteredTodos {
     final todos = widget.project.todos;
     
-    debugPrint('Project has ${todos.length} todos');
+    debugPrint('Project has ${todos.length} to-dos');
     for (final todo in todos.take(5)) {
       debugPrint('  - ${todo.title} (${todo.section})');
     }
@@ -48,10 +48,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         if (a.isCompleted == b.isCompleted) {
           return 0; // Same completion status, maintain order
         }
-        return a.isCompleted ? 1 : -1; // Open todos first
+        return a.isCompleted ? 1 : -1; // Open to-dos first
       });
     
-    debugPrint('After sorting, first 5 todos:');
+    debugPrint('After sorting, first 5 to-dos:');
     for (final todo in sortedTodos.take(5)) {
       debugPrint('  - ${todo.title} (${todo.section})');
     }
@@ -89,7 +89,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 Authenticated User: $authenticatedUsername (ID: $authenticatedUserId)
 Project: ${widget.project.owner}/${widget.project.repoName}
 File: ${widget.project.repoName}-todo.md
-Todos: ${widget.project.todos.length}
+To-dos: ${widget.project.todos.length}
 Repository URL: ${widget.project.repositoryUrl}
 Project ID: ${widget.project.id}
 All User Data: $userData''';
@@ -301,9 +301,9 @@ All User Data: $userData''';
               const SizedBox(height: 16),
             ],
             
-            // Todos Section
+            // To-dos Section
             Text(
-              'Todos (${_filteredTodos.length}${_filterType != 'All' ? ' $_filterType' : ''})',
+              'To-dos (${_filteredTodos.length}${_filterType != 'All' ? ' $_filterType' : ''})',
               style: AppThemes.headlineSmall.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -311,7 +311,7 @@ All User Data: $userData''';
             ),
             const SizedBox(height: 16),
             
-            // Todos List
+            // To-dos List
             ..._buildGroupedTodos(),
           ],
         ),
@@ -427,8 +427,8 @@ All User Data: $userData''';
           SnackBar(
             content: Text(
               todo.isCompleted 
-                  ? 'Todo marked as completed!' 
-                  : 'Todo marked as pending!'
+                  ? 'To-do marked as completed!' 
+                  : 'To-do marked as pending!'
             ),
             backgroundColor: AppThemes.successGreen,
             duration: const Duration(seconds: 2),
@@ -448,7 +448,7 @@ All User Data: $userData''';
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update todo: $e'),
+            content: Text('Failed to update to-do: $e'),
             backgroundColor: AppThemes.errorRed,
             duration: const Duration(seconds: 3),
           ),
