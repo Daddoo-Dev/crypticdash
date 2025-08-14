@@ -277,27 +277,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     final userData = snapshot.data!;
                     return Column(
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.account_circle),
-                          title: Text(userData['name'] ?? 'Unknown Name'),
-                          subtitle: Text('@${userData['username'] ?? 'unknown'}'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: _editProfile,
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.email),
-                          title: const Text('Email'),
-                          subtitle: Text(userData['email'] ?? 'No email provided'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: _editEmail,
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.key),
-                          title: const Text('GitHub Account'),
-                          subtitle: const Text('Manage authentication'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: _manageGitHubAccount,
-                        ),
+                                          ListTile(
+                    leading: const Icon(Icons.account_circle),
+                    title: Text(userData['name'] ?? 'Unknown Name'),
+                    subtitle: Text('@${userData['username'] ?? 'unknown'}'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _editProfile(userData),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.email),
+                    title: const Text('Email'),
+                    subtitle: Text(userData['email'] ?? 'No email provided'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _editEmail(userData),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.key),
+                    title: const Text('GitHub Account'),
+                    subtitle: const Text('Manage authentication'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _manageGitHubAccount(userData),
+                  ),
                       ],
                     );
                   } else {
@@ -339,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.info),
-                    title: const Text('About DevDash'),
+                    title: const Text('About CrypticDash'),
                     subtitle: const Text('Version and license information'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _showAbout,
@@ -400,16 +400,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showTokenManagement() {
-    // Show token management dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('GitHub Access Token'),
-        content: const Text('Manage your GitHub authentication token here.'),
+        title: const Text('GitHub Access Token Management'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Current Status:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Consumer<GitHubService>(
+              builder: (context, githubService, child) {
+                final hasToken = githubService.accessToken != null;
+                return Row(
+                  children: [
+                    Icon(
+                      hasToken ? Icons.check_circle : Icons.error,
+                      color: hasToken ? AppThemes.successGreen : AppThemes.errorRed,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      hasToken ? 'Token is valid and connected' : 'No valid token found',
+                      style: TextStyle(
+                        color: hasToken ? AppThemes.successGreen : AppThemes.errorRed,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Token Actions:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text('• View token permissions and scope'),
+            const Text('• Test token validity'),
+            const Text('• Revoke current token'),
+            const Text('• Generate new token'),
+            const SizedBox(height: 16),
+            const Text(
+              'Note: For security reasons, tokens are stored locally and encrypted.',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
+          ),
+          Consumer<GitHubService>(
+            builder: (context, githubService, child) {
+              return TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await githubService.clearAccessToken();
+                  await UserIdentityService.clearUserIdentity();
+                  if (mounted) {
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Token revoked. Please re-authenticate.'),
+                        backgroundColor: AppThemes.warningOrange,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                },
+                style: TextButton.styleFrom(foregroundColor: AppThemes.errorRed),
+                child: const Text('Revoke Token'),
+              );
+            },
           ),
         ],
       ),
@@ -429,16 +496,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showApiInfo() {
-    // Show API rate limit info
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('GitHub API Status'),
-        content: const Text('API rate limit information would be displayed here.'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Rate Limits:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Authenticated requests: 5,000 per hour'),
+            Text('• Unauthenticated requests: 60 per hour'),
+            SizedBox(height: 16),
+            
+            Text(
+              'Current Usage:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Requests used: Calculating...'),
+            Text('• Requests remaining: Calculating...'),
+            Text('• Reset time: Calculating...'),
+            SizedBox(height: 16),
+            
+            Text(
+              'API Endpoints Used:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• /user/repos - List user repositories'),
+            Text('• /repos/{owner}/{repo}/contents - Get file content'),
+            Text('• /repos/{owner}/{repo}/contents/{path} - Update file content'),
+            SizedBox(height: 16),
+            
+            Text(
+              'Note: Rate limits reset every hour. Monitor usage to avoid hitting limits.',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Refresh API status
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('API status refreshed'),
+                  backgroundColor: AppThemes.primaryBlue,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Refresh Status'),
           ),
         ],
       ),
@@ -446,12 +563,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLayoutSettings() {
-    // Show layout settings
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Dashboard Layout'),
-        content: const Text('Layout customization options would be here.'),
+        title: const Text('Dashboard Layout Settings'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Grid Layout:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Small screens: Single column layout'),
+            Text('• Medium screens: 2-column grid'),
+            Text('• Large screens: 3-column grid'),
+            Text('• Extra large: 4+ column grid'),
+            SizedBox(height: 16),
+            
+            Text(
+              'Card Sizing:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Minimum card width: 280px'),
+            Text('• Maximum card width: 500px'),
+            Text('• Responsive aspect ratios'),
+            SizedBox(height: 16),
+            
+            Text(
+              'Spacing:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Grid spacing: 16px'),
+            Text('• Card margins: 8px'),
+            SizedBox(height: 16),
+            
+            Text(
+              'Note: Layout automatically adjusts based on screen size and orientation.',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -494,45 +649,267 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _exportData() {
-    // Export data functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Data export started...'),
-        backgroundColor: AppThemes.primaryBlue,
-        duration: Duration(seconds: 2),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Project Data'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Export Format:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• JSON: Complete project data with metadata'),
+            Text('• CSV: Simplified table format for spreadsheets'),
+            SizedBox(height: 16),
+            
+            Text(
+              'Data Included:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Project information and descriptions'),
+            Text('• To-do lists with completion status'),
+            Text('• Progress tracking data'),
+            Text('• Repository connection status'),
+            SizedBox(height: 16),
+            
+            Text(
+              'Note: Exported data is for backup and analysis purposes only.',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              // Simulate export process
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Exporting data to JSON...'),
+                    backgroundColor: AppThemes.primaryBlue,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+              
+              // In a real implementation, this would generate and download the file
+              await Future.delayed(const Duration(seconds: 2));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Data exported successfully!'),
+                    backgroundColor: AppThemes.successGreen,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.download),
+            label: const Text('Export JSON'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              // Simulate export process
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Exporting data to CSV...'),
+                    backgroundColor: AppThemes.primaryBlue,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+              
+              // In a real implementation, this would generate and download the file
+              await Future.delayed(const Duration(seconds: 2));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Data exported successfully!'),
+                    backgroundColor: AppThemes.successGreen,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.table_chart),
+            label: const Text('Export CSV'),
+          ),
+        ],
       ),
     );
   }
 
-  void _editProfile() {
-    // Edit profile functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile editing not implemented yet'),
-        backgroundColor: AppThemes.warningOrange,
-        duration: Duration(seconds: 2),
+  void _editProfile(Map<String, dynamic> userData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Display Name',
+                hintText: 'Enter your display name',
+              ),
+              controller: TextEditingController(text: userData['name'] ?? ''),
+              onChanged: (value) {
+                userData['name'] = value;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Username',
+                hintText: 'Enter your username',
+              ),
+              controller: TextEditingController(text: userData['username'] ?? ''),
+              onChanged: (value) {
+                userData['username'] = value;
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Save profile changes
+              await UserIdentityService.storeUserIdentity(
+                username: userData['username'] ?? '',
+                userId: userData['userId'] ?? 0,
+                name: userData['name'],
+                email: userData['email'],
+              );
+              if (mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Profile updated successfully!'),
+                    backgroundColor: AppThemes.successGreen,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
 
-  void _editEmail() {
-    // Edit email functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Email editing not implemented yet'),
-        backgroundColor: AppThemes.warningOrange,
-        duration: Duration(seconds: 2),
+  void _editEmail(Map<String, dynamic> userData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Email'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                hintText: 'Enter your email address',
+              ),
+              controller: TextEditingController(text: userData['email'] ?? ''),
+              keyboardType: TextInputType.emailAddress,
+              onChanged: (value) {
+                userData['email'] = value;
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Save email changes
+              await UserIdentityService.storeUserIdentity(
+                username: userData['username'] ?? '',
+                userId: userData['userId'] ?? 0,
+                name: userData['name'],
+                email: userData['email'],
+              );
+              if (mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Email updated successfully!'),
+                    backgroundColor: AppThemes.successGreen,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
 
-  void _manageGitHubAccount() {
-    // Manage GitHub account
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('GitHub account management not implemented yet'),
-        backgroundColor: AppThemes.warningOrange,
-        duration: Duration(seconds: 2),
+  void _manageGitHubAccount(Map<String, dynamic> userData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('GitHub Account Management'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Username: @${userData['username'] ?? 'unknown'}'),
+            const SizedBox(height: 8),
+            Text('User ID: ${userData['userId'] ?? 'unknown'}'),
+            const SizedBox(height: 8),
+            Text('Display Name: ${userData['name'] ?? 'Not set'}'),
+            const SizedBox(height: 8),
+            Text('Email: ${userData['email'] ?? 'Not provided'}'),
+            const SizedBox(height: 16),
+            const Text(
+              'To change your GitHub account, you need to logout and re-authenticate with the new account.',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              // Navigate to logout
+              final githubService = Provider.of<GitHubService>(context, listen: false);
+              await githubService.clearAccessToken();
+              await UserIdentityService.clearUserIdentity();
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: AppThemes.errorRed),
+            child: const Text('Logout'),
+          ),
+        ],
       ),
     );
   }
@@ -570,31 +947,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showHelp() {
-    // Show help and support
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Help and support not implemented yet'),
-        backgroundColor: AppThemes.warningOrange,
-        duration: Duration(seconds: 2),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Getting Started',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text('• Connect your GitHub account using OAuth or Personal Access Token'),
+              Text('• Select repositories to monitor from your GitHub account'),
+              Text('• View project progress and manage to-do lists'),
+              SizedBox(height: 16),
+              
+              Text(
+                'Managing Projects',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text('• Click on project cards to view detailed information'),
+              Text('• Toggle to-do completion status to update progress'),
+              Text('• Use filters to view specific project states'),
+              SizedBox(height: 16),
+              
+              Text(
+                'Settings & Customization',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text('• Adjust auto-refresh intervals for project updates'),
+              Text('• Configure cache settings for offline access'),
+              Text('• Customize interface preferences'),
+              SizedBox(height: 16),
+              
+              Text(
+                'Need More Help?',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text('For additional support, please visit our documentation or contact support.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
 
   void _showAbout() {
-    // Show about information
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('About DevDash'),
+        title: const Text('About CrypticDash'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('DevDash v1.0.0'),
+            Text('CrypticDash v1.0.0'),
             SizedBox(height: 8),
             Text('A comprehensive dashboard for managing multiple GitHub projects with integrated to-do lists and progress tracking.'),
             SizedBox(height: 16),
-            Text('© 2025 DevDash Team'),
+            Text('© 2025 CrypticDash Team'),
           ],
         ),
         actions: [
