@@ -15,6 +15,31 @@ class ProjectDetailScreen extends StatefulWidget {
 }
 
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+  String _filterType = 'All'; // All, Completed, Pending
+  
+  List<Todo> get _filteredTodos {
+    final todos = widget.project.todos;
+    
+    // Sort: open todos first, then completed
+    final sortedTodos = List<Todo>.from(todos)
+      ..sort((a, b) {
+        if (a.isCompleted == b.isCompleted) {
+          return 0; // Same completion status, maintain order
+        }
+        return a.isCompleted ? 1 : -1; // Open todos first
+      });
+    
+    // Apply filter
+    switch (_filterType) {
+      case 'Completed':
+        return sortedTodos.where((todo) => todo.isCompleted).toList();
+      case 'Pending':
+        return sortedTodos.where((todo) => !todo.isCompleted).toList();
+      default: // 'All'
+        return sortedTodos;
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -135,9 +160,44 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             
             const SizedBox(height: 24),
             
+            // Filter Section
+            Row(
+              children: [
+                Text(
+                  'Filter:',
+                  style: AppThemes.titleMedium.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    'All',
+                    'Pending',
+                    'Completed',
+                  ].map((filter) {
+                    return FilterChip(
+                      label: Text(filter),
+                      selected: _filterType == filter,
+                      onSelected: (selected) {
+                        setState(() {
+                          _filterType = filter;
+                        });
+                      },
+                      selectedColor: colorScheme.primaryContainer,
+                      checkmarkColor: colorScheme.onPrimaryContainer,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
             // Todos Section
             Text(
-              'All Todos (${widget.project.todos.length})',
+              'Todos (${_filteredTodos.length}${_filterType != 'All' ? ' $_filterType' : ''})',
               style: AppThemes.headlineSmall.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -146,7 +206,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             const SizedBox(height: 16),
             
             // Todos List
-            ...widget.project.todos.map((todo) => Card(
+            ..._filteredTodos.map((todo) => Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 leading: Icon(

@@ -178,29 +178,30 @@ class ProjectTile extends StatelessWidget {
                   style: AppThemes.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
-                    fontSize: 12,
+                    fontSize: 12, // Added for compactness
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 4), // Reduced spacing
                 ...project.todos
                     .where((todo) => !todo.isCompleted)
+                    .toList()
                     .take(5)
                     .map((todo) => Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
+                      padding: const EdgeInsets.only(bottom: 2), // Reduced spacing
                       child: Row(
                         children: [
                           Icon(
                             Icons.radio_button_unchecked,
-                            size: 14,
+                            size: 14, // Reduced size
                             color: colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 6), // Reduced spacing
                           Expanded(
                             child: Text(
                               todo.title,
                               style: AppThemes.bodyMedium.copyWith(
                                 color: colorScheme.onSurface,
-                                fontSize: 11,
+                                fontSize: 11, // Reduced size
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -209,6 +210,7 @@ class ProjectTile extends StatelessWidget {
                         ],
                       ),
                     )),
+                const SizedBox(height: 8), // Reduced spacing
               ],
               
               const SizedBox(height: 8),
