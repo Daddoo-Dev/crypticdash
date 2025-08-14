@@ -11,6 +11,7 @@ import '../services/github_service.dart'; // Added import for GitHubService
 import '../screens/auth_screen.dart'; // Added import for AuthScreen
 import '../services/project_selection_service.dart'; // Added import for ProjectSelectionService
 import '../screens/project_detail_screen.dart'; // Added import for ProjectDetailScreen
+import '../screens/settings_screen.dart'; // Added import for SettingsScreen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -172,7 +173,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               IconButton(
                 icon: const Icon(Icons.settings),
                 onPressed: () {
-                  // Settings screen not implemented yet
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  );
                 },
                 tooltip: 'Settings',
               ),

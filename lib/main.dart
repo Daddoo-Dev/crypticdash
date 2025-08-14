@@ -5,6 +5,7 @@ import 'services/github_service.dart';
 import 'services/project_service.dart';
 import 'services/theme_service.dart';
 import 'services/project_selection_service.dart';
+import 'services/settings_service.dart';
 import 'services/app_flow_service.dart';
 import 'theme/app_themes.dart';
 
@@ -28,6 +29,9 @@ class CrypticDashApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => ProjectSelectionService(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => SettingsService(),
         ),
         ChangeNotifierProxyProvider2<GitHubService, ProjectSelectionService, ProjectService>(
           create: (context) => ProjectService(
