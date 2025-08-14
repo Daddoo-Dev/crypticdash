@@ -18,6 +18,7 @@ class GitHubRepository {
   final DateTime? pushedAt;
   final String defaultBranch;
   final Map<String, dynamic> permissions;
+  final String ownerLogin; // Add explicit owner field
 
   GitHubRepository({
     required this.id,
@@ -39,13 +40,14 @@ class GitHubRepository {
     this.pushedAt,
     required this.defaultBranch,
     required this.permissions,
+    required this.ownerLogin,
   });
 
   bool get canWrite => permissions['push'] == true;
   bool get canRead => permissions['pull'] == true;
   bool get canAdmin => permissions['admin'] == true;
 
-  String get owner => fullName.split('/').first;
+  String get owner => ownerLogin; // Use the explicit owner field instead of parsing fullName
 
   Map<String, dynamic> toJson() {
     return {
@@ -68,6 +70,7 @@ class GitHubRepository {
       'pushedAt': pushedAt?.toIso8601String(),
       'defaultBranch': defaultBranch,
       'permissions': permissions,
+      'ownerLogin': ownerLogin,
     };
   }
 
@@ -92,6 +95,7 @@ class GitHubRepository {
       pushedAt: json['pushed_at'] != null ? DateTime.parse(json['pushed_at']) : null,
       defaultBranch: json['default_branch'] ?? 'main',
       permissions: json['permissions'] ?? {},
+      ownerLogin: json['owner']['login'], // Assuming 'owner' is a Map and 'login' is the key
     );
   }
 }

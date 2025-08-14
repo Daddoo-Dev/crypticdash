@@ -97,6 +97,7 @@ class Todo {
   final DateTime? completedAt;
   final DateTime createdAt;
   final String? notes;
+  final String? section; // Track which section/phase this todo belongs to
 
   Todo({
     required this.id,
@@ -105,6 +106,7 @@ class Todo {
     this.completedAt,
     required this.createdAt,
     this.notes,
+    this.section,
   });
 
   Todo copyWith({
@@ -114,6 +116,7 @@ class Todo {
     DateTime? completedAt,
     DateTime? createdAt,
     String? notes,
+    String? section,
   }) {
     return Todo(
       id: id ?? this.id,
@@ -122,6 +125,7 @@ class Todo {
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
       notes: notes ?? this.notes,
+      section: section ?? this.section,
     );
   }
 
@@ -133,6 +137,7 @@ class Todo {
       'completedAt': completedAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'notes': notes,
+      'section': section,
     };
   }
 
@@ -144,6 +149,7 @@ class Todo {
       completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
       createdAt: DateTime.parse(json['createdAt']),
       notes: json['notes'],
+      section: json['section'],
     );
   }
 }

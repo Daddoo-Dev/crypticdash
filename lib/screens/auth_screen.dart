@@ -5,6 +5,7 @@ import '../services/github_service.dart';
 import '../services/github_oauth_service.dart';
 import '../services/theme_service.dart';
 import '../services/app_flow_service.dart';
+import '../services/user_identity_service.dart';
 import '../theme/app_themes.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -63,21 +64,41 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _authenticateWithToken() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_tokenController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid GitHub Personal Access Token'),
+          backgroundColor: AppThemes.errorRed,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
     try {
+      final token = _tokenController.text.trim();
       final githubService = Provider.of<GitHubService>(context, listen: false);
-      await githubService.setAccessToken(_tokenController.text.trim());
+      await githubService.setAccessToken(token);
       
       final isConnected = await githubService.testConnection();
       
       if (isConnected) {
+        // Fetch and store user identity
+        final userData = await githubService.getAuthenticatedUser();
+        if (userData != null) {
+          await UserIdentityService.storeUserIdentity(
+            username: userData['login'],
+            userId: userData['id'],
+            name: userData['name'],
+            email: userData['email'],
+          );
+          debugPrint('Stored user identity: ${userData['login']} (ID: ${userData['id']})');
+        }
+        
         if (mounted) {
-          // Use AppFlowService to determine next screen
           final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
           if (mounted) {
             Navigator.of(context).pushReplacement(
@@ -89,7 +110,7 @@ class _AuthScreenState extends State<AuthScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Invalid token. Please check your GitHub Personal Access Token.'),
+              content: Text('Authentication failed. Please check your token.'),
               backgroundColor: AppThemes.errorRed,
             ),
           );
@@ -99,7 +120,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Authentication failed: $e'),
+            content: Text('Error: $e'),
             backgroundColor: AppThemes.errorRed,
           ),
         );
@@ -130,12 +151,26 @@ class _AuthScreenState extends State<AuthScreen> {
           final isConnected = await githubService.testConnection();
           
           if (isConnected && mounted) {
-            // Use AppFlowService to determine next screen
-            final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
-            if (mounted) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => nextScreen),
+            // Fetch and store user identity
+            final userData = await githubService.getAuthenticatedUser();
+            if (userData != null) {
+              await UserIdentityService.storeUserIdentity(
+                username: userData['login'],
+                userId: userData['id'],
+                name: userData['name'],
+                email: userData['email'],
               );
+              debugPrint('Stored user identity via OAuth: ${userData['login']} (ID: ${userData['id']})');
+            }
+            
+            // Use AppFlowService to determine next screen
+            if (mounted) {
+              final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
+              if (mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => nextScreen),
+                );
+              }
             }
           }
         }

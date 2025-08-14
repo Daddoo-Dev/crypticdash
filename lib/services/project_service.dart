@@ -4,6 +4,7 @@ import '../models/github_repository.dart';
 import '../services/github_service.dart';
 import '../services/markdown_service.dart';
 import '../services/project_selection_service.dart';
+import '../services/user_identity_service.dart';
 
 class ProjectService extends ChangeNotifier {
   final GitHubService _githubService;
@@ -48,19 +49,30 @@ class ProjectService extends ChangeNotifier {
 
   Future<Project?> _loadProjectFromRepo(GitHubRepository repo) async {
     try {
+      debugPrint('=== Loading Project Debug ===');
+      debugPrint('Repo: ${repo.name}');
+      debugPrint('Full Name: ${repo.fullName}');
+      debugPrint('Owner (computed): ${repo.owner}');
+      debugPrint('HTML URL: ${repo.htmlUrl}');
+      
+      // Get the authenticated user's identity
+      final authenticatedUsername = await UserIdentityService.getUsername();
+      debugPrint('Authenticated Username: $authenticatedUsername');
+      debugPrint('=== End Debug ===');
+      
       final todoContent = await _fetchTodoFromGitHub(repo);
       
       if (todoContent != null) {
-        final project = _parseProjectContent(repo, todoContent);
+        final project = _parseProjectContent(repo, todoContent, authenticatedUsername);
         return project;
       } else {
         return Project(
           id: repo.fullName,
           name: repo.name,
-          owner: repo.owner,
+          owner: authenticatedUsername ?? repo.owner, // Use authenticated user as owner
           description: repo.description,
           repositoryUrl: repo.htmlUrl,
-          repoName: repo.name,
+          repoName: repo.name, // Use actual repository name, not username
           todos: [],
           notes: '',
           lastUpdated: DateTime.now(),
@@ -101,9 +113,18 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  Project _parseProjectContent(GitHubRepository repo, String content) {
+  Project _parseProjectContent(GitHubRepository repo, String content, String? authenticatedUsername) {
+    // Use authenticated username as owner, repository name as repoName
+    final owner = authenticatedUsername ?? repo.owner;
+    final repoName = repo.name; // This should be the actual repository name (e.g., "crypticdash")
+    
+    debugPrint('Creating project with:');
+    debugPrint('  Owner: $owner (authenticated user)');
+    debugPrint('  Repo Name: $repoName (repository name)');
+    debugPrint('  Full Name: ${repo.fullName}');
+    
     // Try enhanced parsing first (our new format)
-    final enhancedProject = MarkdownService.parseEnhancedTodoMarkdown(content, repo.name, repo.owner);
+    final enhancedProject = MarkdownService.parseEnhancedTodoMarkdown(content, owner, repoName);
     if (enhancedProject != null) {
       debugPrint('Successfully parsed enhanced TODO format for ${repo.name}');
       return enhancedProject;
@@ -116,10 +137,10 @@ class ProjectService extends ChangeNotifier {
     return Project(
       id: repo.fullName,
       name: repo.name,
-      owner: repo.owner,
+      owner: owner,
       description: repo.description,
       repositoryUrl: repo.htmlUrl,
-      repoName: repo.name,
+      repoName: repoName,
       todos: todos,
       notes: '',
       lastUpdated: DateTime.now(),

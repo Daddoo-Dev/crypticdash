@@ -103,6 +103,19 @@ class GitHubService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> reposJson = json.decode(response.body);
+        
+        // Debug: Log the first few repositories to see their structure
+        debugPrint('=== GitHub Repositories Debug ===');
+        for (int i = 0; i < reposJson.length && i < 3; i++) {
+          final repo = reposJson[i];
+          debugPrint('Repo $i:');
+          debugPrint('  name: ${repo['name']}');
+          debugPrint('  full_name: ${repo['full_name']}');
+          debugPrint('  owner.login: ${repo['owner']?['login']}');
+          debugPrint('  html_url: ${repo['html_url']}');
+        }
+        debugPrint('=== End Debug ===');
+        
         return reposJson.map((repo) => GitHubRepository.fromJson(repo)).toList();
       } else {
         throw Exception('Failed to fetch repositories: ${response.statusCode}');
@@ -110,6 +123,41 @@ class GitHubService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error fetching repositories: $e');
       rethrow;
+    }
+  }
+
+  /// Fetch the authenticated user's information from GitHub
+  Future<Map<String, dynamic>?> getAuthenticatedUser() async {
+    if (_accessToken == null) {
+      throw Exception('No access token provided');
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/user'),
+        headers: {
+          'Authorization': 'token $_accessToken',
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userData = json.decode(response.body);
+        debugPrint('=== Authenticated User Debug ===');
+        debugPrint('User ID: ${userData['id']}');
+        debugPrint('Username: ${userData['login']}');
+        debugPrint('Name: ${userData['name']}');
+        debugPrint('Email: ${userData['email']}');
+        debugPrint('=== End Debug ===');
+        return userData;
+      } else {
+        debugPrint('Failed to fetch user info: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error fetching user info: $e');
+      return null;
     }
   }
 
@@ -205,6 +253,12 @@ class GitHubService extends ChangeNotifier {
       throw Exception('No access token provided');
     }
 
+    debugPrint('Attempting to create/update file: $owner/$repo/$path');
+    debugPrint('Message: $message');
+    debugPrint('Content length: ${content.length}');
+    debugPrint('SHA provided: ${sha ?? 'none'}');
+    debugPrint('Token available: ${_accessToken != null}');
+
     try {
       final Map<String, dynamic> body = {
         'message': message,
@@ -225,9 +279,18 @@ class GitHubService extends ChangeNotifier {
         body: json.encode(body),
       );
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      debugPrint('GitHub API response status: ${response.statusCode}');
+      debugPrint('GitHub API response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('File successfully created/updated');
+        return true;
+      } else {
+        debugPrint('GitHub API error: ${response.statusCode} - ${response.body}');
+        return false;
+      }
     } catch (e) {
-      debugPrint('Error creating/updating file: $e');
+      debugPrint('Exception in createOrUpdateFile: $e');
       return false;
     }
   }
