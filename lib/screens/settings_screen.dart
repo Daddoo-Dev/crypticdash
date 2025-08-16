@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
-import '../services/simple_ai_service.dart';
+import '../services/mistral_ai_service.dart';
 
 import '../services/settings_service.dart';
 import '../theme/app_themes.dart';
@@ -70,19 +70,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                                        Consumer<SimpleAIService>(
+                                        Consumer<MistralAIService>(
                       builder: (context, aiService, child) {
                         return Column(
                           children: [
                             SwitchListTile(
-                              title: const Text('Enable Simple AI'),
+                              title: const Text('Enable Mistral AI'),
                               subtitle: const Text('Turn on local AI-powered insights and TODO.md generation'),
                               value: aiService.enabled,
-                              onChanged: (value) => aiService.setEnabled(value),
+                              onChanged: (value) => value ? aiService.enable() : aiService.disable(),
                             ),
                             ListTile(
                               title: const Text('AI Model'),
-                              subtitle: Text('${aiService.modelInfo['name']} (Local)'),
+                              subtitle: const Text('Mistral 7B Instruct (Local)'),
                               trailing: const Icon(Icons.check_circle, color: AppThemes.successGreen),
                             ),
                             ListTile(
@@ -98,14 +98,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             ListTile(
                               title: const Text('Model Size'),
-                              subtitle: Text(aiService.modelInfo['size']),
+                              subtitle: const Text('4.37 GB (Q4_K_M)'),
                             ),
                             ListTile(
                               title: const Text('AI Status'),
-                              subtitle: Text(aiService.getStatusMessage()),
+                              subtitle: Text(aiService.statusMessage),
                               trailing: Icon(
-                                aiService.isReady() ? Icons.check_circle : Icons.info,
-                                color: aiService.isReady() ? AppThemes.successGreen : AppThemes.warningOrange,
+                                aiService.modelLoaded ? Icons.check_circle : Icons.info,
+                                color: aiService.modelLoaded ? AppThemes.successGreen : AppThemes.warningOrange,
                               ),
                             ),
                           ],

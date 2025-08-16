@@ -1,6 +1,0 @@
-torch>=2.0.0
-transformers>=4.35.0
-onnx>=1.14.0
-numpy>=1.21.0
-accelerate>=1.10.0
-onnxscript>=0.3.0

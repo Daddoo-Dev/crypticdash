@@ -7,9 +7,10 @@ import 'services/project_service.dart';
 import 'services/theme_service.dart';
 import 'services/project_selection_service.dart';
 import 'services/settings_service.dart';
+import 'services/logging_service.dart';
 
 import 'services/app_flow_service.dart';
-import 'services/simple_ai_service.dart';
+import 'services/mistral_ai_service.dart';
 
 import 'theme/app_themes.dart';
 
@@ -18,19 +19,19 @@ void main() async {
     // Try to load .env file with proper path handling
     final currentDir = Directory.current.path;
     final envPath = '$currentDir/.env';
-    print('Current directory: $currentDir');
-    print('Looking for .env at: $envPath');
+    LoggingService.debug('Current directory: $currentDir');
+    LoggingService.debug('Looking for .env at: $envPath');
     
     // Check if file exists first
     final envFile = File(envPath);
     if (await envFile.exists()) {
-      print('.env file exists at: $envPath');
+      LoggingService.info('.env file exists at: $envPath');
       await dotenv.load(fileName: envPath);
-      print('Successfully loaded .env file');
-      print('GITHUB_CLIENT_ID: ${dotenv.env['GITHUB_CLIENT_ID']}');
-      print('GITHUB_CLIENT_SECRET: ${dotenv.env['GITHUB_CLIENT_SECRET']}');
+      LoggingService.success('Successfully loaded .env file');
+      LoggingService.debug('GITHUB_CLIENT_ID: ${dotenv.env['GITHUB_CLIENT_ID']}');
+      LoggingService.debug('GITHUB_CLIENT_SECRET: ${dotenv.env['GITHUB_CLIENT_SECRET']}');
     } else {
-      print('.env file does NOT exist at: $envPath');
+      LoggingService.warning('.env file does NOT exist at: $envPath');
       // Try alternative paths
       final altPaths = [
         '.env',
@@ -42,18 +43,17 @@ void main() async {
       for (final path in altPaths) {
         try {
           await dotenv.load(fileName: path);
-          print('Successfully loaded .env from: $path');
-          print('GITHUB_CLIENT_ID: ${dotenv.env['GITHUB_CLIENT_ID']}');
-          print('GITHUB_CLIENT_SECRET: ${dotenv.env['GITHUB_CLIENT_SECRET']}');
+          LoggingService.success('Successfully loaded .env from: $path');
+          LoggingService.debug('GITHUB_CLIENT_ID: ${dotenv.env['GITHUB_CLIENT_ID']}');
+          LoggingService.debug('GITHUB_CLIENT_SECRET: ${dotenv.env['GITHUB_CLIENT_SECRET']}');
           break;
         } catch (e) {
-          print('Failed to load from $path: $e');
+          LoggingService.warning('Failed to load from $path: $e');
         }
       }
     }
   } catch (e) {
-    print('Error loading .env file: $e');
-    print('Stack trace: ${StackTrace.current}');
+    LoggingService.error('Error loading .env file: $e', e, StackTrace.current);
     // Continue without .env file
   }
   runApp(const CrypticDashApp());
@@ -79,13 +79,13 @@ class CrypticDashApp extends StatelessWidget {
           create: (context) => SettingsService(),
         ),
 
-        ChangeNotifierProxyProvider<GitHubService, SimpleAIService>(
-          create: (context) => SimpleAIService()..setModelPath('assets/ai_models/gemma-3-270m/onnx'),
+        ChangeNotifierProxyProvider<GitHubService, MistralAIService>(
+          create: (context) => MistralAIService(),
           update: (context, githubService, previous) {
             if (previous != null) {
-              previous.setGitHubService(githubService);
+              return previous;
             }
-            return previous ?? SimpleAIService()..setGitHubService(githubService)..setModelPath('assets/ai_models/gemma-3-270m/onnx');
+            return MistralAIService();
           },
         ),
         ChangeNotifierProxyProvider2<GitHubService, ProjectSelectionService, ProjectService>(
@@ -137,21 +137,20 @@ class _AppFlowWrapperState extends State<AppFlowWrapper> {
   }
 
   Future<void> _determineInitialScreen() async {
-    print('AppFlowWrapper: Starting to determine initial screen...');
+    LoggingService.debug('AppFlowWrapper: Starting to determine initial screen...');
     try {
       final nextScreen = await AppFlowService.getInitialScreen(context);
-      print('AppFlowWrapper: Got next screen: ${nextScreen.runtimeType}');
+      LoggingService.debug('AppFlowWrapper: Got next screen: ${nextScreen.runtimeType}');
       if (mounted) {
         setState(() {
           _currentScreen = nextScreen;
         });
-        print('AppFlowWrapper: Screen updated successfully');
+        LoggingService.success('AppFlowWrapper: Screen updated successfully');
       } else {
-        print('AppFlowWrapper: Widget not mounted, skipping setState');
+        LoggingService.warning('AppFlowWrapper: Widget not mounted, skipping setState');
       }
     } catch (e, stackTrace) {
-      print('AppFlowWrapper: Error determining initial screen: $e');
-      print('AppFlowWrapper: Stack trace: $stackTrace');
+      LoggingService.error('AppFlowWrapper: Error determining initial screen: $e', e, stackTrace);
       // Fallback to auth screen on error
       if (mounted) {
         setState(() {

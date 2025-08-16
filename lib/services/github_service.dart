@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/github_repository.dart';
+import 'logging_service.dart';
 
 class GitHubService extends ChangeNotifier {
   static const String _tokenKey = 'github_access_token';
@@ -16,24 +17,23 @@ class GitHubService extends ChangeNotifier {
   }
 
   Future<void> _loadStoredToken() async {
-    print('GitHubService: _loadStoredToken called');
+    LoggingService.debug('GitHubService: _loadStoredToken called');
     try {
       final prefs = await SharedPreferences.getInstance();
-      print('GitHubService: Got SharedPreferences instance');
+      LoggingService.debug('GitHubService: Got SharedPreferences instance');
       
       final storedToken = prefs.getString(_tokenKey);
-      print('GitHubService: Stored token from SharedPreferences: ${storedToken != null ? "exists" : "null"}');
+      LoggingService.debug('GitHubService: Stored token from SharedPreferences: ${storedToken != null ? "exists" : "null"}');
       
       if (storedToken != null && storedToken.isNotEmpty) {
         _accessToken = storedToken;
-        print('GitHubService: Loaded stored GitHub token, length: ${storedToken.length}');
+        LoggingService.success('GitHubService: Loaded stored GitHub token, length: ${storedToken.length}');
         notifyListeners();
       } else {
-        print('GitHubService: No stored token found or token is empty');
+        LoggingService.warning('GitHubService: No stored token found or token is empty');
       }
     } catch (e) {
-      print('GitHubService: Error loading stored token: $e');
-      print('GitHubService: Stack trace: ${StackTrace.current}');
+      LoggingService.error('GitHubService: Error loading stored token: $e', e, StackTrace.current);
     }
   }
 
@@ -68,31 +68,31 @@ class GitHubService extends ChangeNotifier {
   }
 
   Future<bool> hasValidToken() async {
-    print('GitHubService: hasValidToken called');
-    print('GitHubService: _accessToken is null: ${_accessToken == null}');
-    print('GitHubService: _accessToken is empty: ${_accessToken?.isEmpty ?? true}');
+    LoggingService.debug('GitHubService: hasValidToken called');
+    LoggingService.debug('GitHubService: _accessToken is null: ${_accessToken == null}');
+    LoggingService.debug('GitHubService: _accessToken is empty: ${_accessToken?.isEmpty ?? true}');
     
     if (_accessToken == null || _accessToken!.isEmpty) {
-      print('GitHubService: No token available, returning false');
+      LoggingService.warning('GitHubService: No token available, returning false');
       return false;
     }
     
-    print('GitHubService: Token exists, testing connection...');
+    LoggingService.debug('GitHubService: Token exists, testing connection...');
     // Test if the stored token is still valid
     final isValid = await testConnection();
-    print('GitHubService: Connection test result: $isValid');
+    LoggingService.debug('GitHubService: Connection test result: $isValid');
     return isValid;
   }
 
-  Future<bool> testConnection() async {
-    print('GitHubService: testConnection called');
+    Future<bool> testConnection() async {
+    LoggingService.debug('GitHubService: testConnection called');
     if (_accessToken == null) {
-      print('GitHubService: No access token for connection test');
+      LoggingService.warning('GitHubService: No access token for connection test');
       return false;
     }
 
     try {
-      print('GitHubService: Making HTTP request to $_baseUrl/user');
+      LoggingService.debug('GitHubService: Making HTTP request to $_baseUrl/user');
       final response = await http.get(
         Uri.parse('$_baseUrl/user'),
         headers: {
@@ -100,16 +100,15 @@ class GitHubService extends ChangeNotifier {
           'Accept': 'application/vnd.github.v3+json',
         },
       );
-
-      print('GitHubService: Response status code: ${response.statusCode}');
-      print('GitHubService: Response body: ${response.body}');
+      
+      LoggingService.debug('GitHubService: Response status code: ${response.statusCode}');
+      LoggingService.debug('GitHubService: Response body: ${response.body}');
       
       final isValid = response.statusCode == 200;
-      print('GitHubService: Connection test result: $isValid');
+      LoggingService.debug('GitHubService: Connection test result: $isValid');
       return isValid;
     } catch (e) {
-      print('GitHubService: Connection test failed: $e');
-      print('GitHubService: Stack trace: ${StackTrace.current}');
+      LoggingService.error('GitHubService: Connection test failed: $e', e, StackTrace.current);
       return false;
     }
   }
@@ -320,5 +319,97 @@ class GitHubService extends ChangeNotifier {
       debugPrint('Exception in createOrUpdateFile: $e');
       return false;
     }
+  }
+
+  /// Get the contents of a directory (files and subdirectories)
+  Future<List<Map<String, dynamic>>> getDirectoryContents(String owner, String repo, [String path = '']) async {
+    try {
+      final url = 'https://api.github.com/repos/$owner/$repo/contents/$path';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'token $_accessToken',
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> contents = json.decode(response.body);
+        return contents.map((item) => Map<String, dynamic>.from(item)).toList();
+      } else {
+        throw Exception('Failed to get directory contents: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error getting directory contents: $e');
+    }
+  }
+
+  /// Recursively explore repository structure and return all files and directories
+  Future<Map<String, dynamic>> exploreRepositoryStructure(String owner, String repo) async {
+    final structure = <String, dynamic>{
+      'files': <String>[],
+      'directories': <String>[],
+      'fileTree': <String, dynamic>{},
+    };
+    
+    try {
+      await _exploreDirectory(owner, repo, '', structure['fileTree']);
+      
+      // Extract all files and directories from the tree
+      _extractPathsFromTree(structure['fileTree'], structure['files'], structure['directories']);
+      
+      return structure;
+    } catch (e) {
+      throw Exception('Error exploring repository structure: $e');
+    }
+  }
+  
+  Future<void> _exploreDirectory(String owner, String repo, String path, Map<String, dynamic> tree) async {
+    try {
+      final contents = await getDirectoryContents(owner, repo, path);
+      
+      for (final item in contents) {
+        final name = item['name'] as String;
+        final type = item['type'] as String;
+        final fullPath = path.isEmpty ? name : '$path/$name';
+        
+        if (type == 'file') {
+          tree[name] = {
+            'type': 'file',
+            'path': fullPath,
+            'size': item['size'],
+            'sha': item['sha'],
+          };
+        } else if (type == 'dir') {
+          tree[name] = {
+            'type': 'directory',
+            'path': fullPath,
+            'contents': <String, dynamic>{},
+          };
+          
+          // Recursively explore subdirectory
+          await _exploreDirectory(owner, repo, fullPath, tree[name]['contents']);
+        }
+      }
+    } catch (e) {
+      // If we can't access a directory, mark it as inaccessible
+      tree['_error'] = 'Could not access: $e';
+    }
+  }
+  
+  void _extractPathsFromTree(Map<String, dynamic> tree, List<String> files, List<String> directories) {
+    tree.forEach((key, value) {
+      if (value is Map<String, dynamic>) {
+        if (value['type'] == 'file') {
+          files.add(value['path']);
+        } else if (value['type'] == 'directory') {
+          directories.add(value['path']);
+          // Recursively explore subdirectories
+          if (value['contents'] != null) {
+            _extractPathsFromTree(value['contents'], files, directories);
+          }
+        }
+      }
+    });
   }
 }

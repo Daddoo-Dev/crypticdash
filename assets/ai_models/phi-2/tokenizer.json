@@ -1,9 +1,0 @@
-{
-  "model_type": "phi",
-  "vocab_size": 51200,
-  "bos_token": "<|endoftext|>",
-  "eos_token": "<|endoftext|>",
-  "unk_token": "<|endoftext|>",
-  "pad_token": null,
-  "clean_up_tokenization_spaces": true
-}
