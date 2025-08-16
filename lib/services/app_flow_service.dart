@@ -8,27 +8,42 @@ import '../screens/auth_screen.dart';
 
 class AppFlowService {
   static Future<Widget> getInitialScreen(BuildContext context) async {
+    print('AppFlowService: Starting getInitialScreen...');
     try {
       final githubService = Provider.of<GitHubService>(context, listen: false);
+      print('AppFlowService: Got GitHubService instance');
+      
       final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
+      print('AppFlowService: Got ProjectSelectionService instance');
       
       // Check if user has a valid GitHub token
+      print('AppFlowService: Checking if user has valid GitHub token...');
       final hasValidToken = await githubService.hasValidToken();
+      print('AppFlowService: hasValidToken result: $hasValidToken');
       
       if (!hasValidToken) {
+        print('AppFlowService: No valid token, returning AuthScreen');
         // No valid token, show auth screen
         return const AuthScreen();
       }
       
+      print('AppFlowService: User has valid token, checking setup status...');
       // Check if user has completed setup and has projects selected
-      if (projectSelectionService.shouldShowSetupScreen()) {
+      final shouldShowSetup = projectSelectionService.shouldShowSetupScreen();
+      print('AppFlowService: shouldShowSetup result: $shouldShowSetup');
+      
+      if (shouldShowSetup) {
+        print('AppFlowService: User needs setup, returning ProjectSelectionScreen');
         // User needs to complete setup or has no projects selected
         return const ProjectSelectionScreen(isSetupMode: true);
       } else {
+        print('AppFlowService: User setup complete, returning DashboardScreen');
         // User has completed setup and has projects, go to dashboard
         return const DashboardScreen();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('AppFlowService: Error in getInitialScreen: $e');
+      print('AppFlowService: Stack trace: $stackTrace');
       // If there's an error, default to auth screen
       return const AuthScreen();
     }

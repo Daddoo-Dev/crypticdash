@@ -16,16 +16,24 @@ class GitHubService extends ChangeNotifier {
   }
 
   Future<void> _loadStoredToken() async {
+    print('GitHubService: _loadStoredToken called');
     try {
       final prefs = await SharedPreferences.getInstance();
+      print('GitHubService: Got SharedPreferences instance');
+      
       final storedToken = prefs.getString(_tokenKey);
+      print('GitHubService: Stored token from SharedPreferences: ${storedToken != null ? "exists" : "null"}');
+      
       if (storedToken != null && storedToken.isNotEmpty) {
         _accessToken = storedToken;
-        debugPrint('Loaded stored GitHub token');
+        print('GitHubService: Loaded stored GitHub token, length: ${storedToken.length}');
         notifyListeners();
+      } else {
+        print('GitHubService: No stored token found or token is empty');
       }
     } catch (e) {
-      debugPrint('Error loading stored token: $e');
+      print('GitHubService: Error loading stored token: $e');
+      print('GitHubService: Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -60,18 +68,31 @@ class GitHubService extends ChangeNotifier {
   }
 
   Future<bool> hasValidToken() async {
+    print('GitHubService: hasValidToken called');
+    print('GitHubService: _accessToken is null: ${_accessToken == null}');
+    print('GitHubService: _accessToken is empty: ${_accessToken?.isEmpty ?? true}');
+    
     if (_accessToken == null || _accessToken!.isEmpty) {
+      print('GitHubService: No token available, returning false');
       return false;
     }
     
+    print('GitHubService: Token exists, testing connection...');
     // Test if the stored token is still valid
-    return await testConnection();
+    final isValid = await testConnection();
+    print('GitHubService: Connection test result: $isValid');
+    return isValid;
   }
 
   Future<bool> testConnection() async {
-    if (_accessToken == null) return false;
+    print('GitHubService: testConnection called');
+    if (_accessToken == null) {
+      print('GitHubService: No access token for connection test');
+      return false;
+    }
 
     try {
+      print('GitHubService: Making HTTP request to $_baseUrl/user');
       final response = await http.get(
         Uri.parse('$_baseUrl/user'),
         headers: {
@@ -80,9 +101,15 @@ class GitHubService extends ChangeNotifier {
         },
       );
 
-      return response.statusCode == 200;
+      print('GitHubService: Response status code: ${response.statusCode}');
+      print('GitHubService: Response body: ${response.body}');
+      
+      final isValid = response.statusCode == 200;
+      print('GitHubService: Connection test result: $isValid');
+      return isValid;
     } catch (e) {
-      debugPrint('Connection test failed: $e');
+      print('GitHubService: Connection test failed: $e');
+      print('GitHubService: Stack trace: ${StackTrace.current}');
       return false;
     }
   }

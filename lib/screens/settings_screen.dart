@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
+import '../services/simple_ai_service.dart';
 
 import '../services/settings_service.dart';
 import '../theme/app_themes.dart';
@@ -43,6 +44,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // AI Integration Section
+            _buildSectionHeader(
+              context,
+              'AI Integration',
+              Icons.psychology,
+              colorScheme.primary,
+            ),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.psychology, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'AI Integration',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                                        Consumer<SimpleAIService>(
+                      builder: (context, aiService, child) {
+                        return Column(
+                          children: [
+                            SwitchListTile(
+                              title: const Text('Enable Simple AI'),
+                              subtitle: const Text('Turn on local AI-powered insights and TODO.md generation'),
+                              value: aiService.enabled,
+                              onChanged: (value) => aiService.setEnabled(value),
+                            ),
+                            ListTile(
+                              title: const Text('AI Model'),
+                              subtitle: Text('${aiService.modelInfo['name']} (Local)'),
+                              trailing: const Icon(Icons.check_circle, color: AppThemes.successGreen),
+                            ),
+                            ListTile(
+                              title: const Text('Model Status'),
+                              subtitle: const Text(
+                                'Bundled with app - Always available',
+                                style: TextStyle(
+                                  color: AppThemes.successGreen,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              trailing: const Icon(Icons.check_circle, color: AppThemes.successGreen),
+                            ),
+                            ListTile(
+                              title: const Text('Model Size'),
+                              subtitle: Text(aiService.modelInfo['size']),
+                            ),
+                            ListTile(
+                              title: const Text('AI Status'),
+                              subtitle: Text(aiService.getStatusMessage()),
+                              trailing: Icon(
+                                aiService.isReady() ? Icons.check_circle : Icons.info,
+                                color: aiService.isReady() ? AppThemes.successGreen : AppThemes.warningOrange,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
             // GitHub Integration Section
             _buildSectionHeader(
               context,
@@ -61,10 +137,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       builder: (context, githubService, child) {
                         final hasToken = githubService.accessToken != null;
                         return Chip(
+                          // ignore: prefer_const_constructors
                           label: Text(hasToken ? 'Connected' : 'Not Connected'),
                           backgroundColor: hasToken 
-                              ? AppThemes.successGreen.withValues(alpha: 0.2)
-                              : AppThemes.errorRed.withValues(alpha: 0.2),
+                              ? AppThemes.successGreen.withOpacity(0.2)
+                              : AppThemes.errorRed.withOpacity(0.2),
                           labelStyle: TextStyle(
                             color: hasToken ? AppThemes.successGreen : AppThemes.errorRed,
                           ),
@@ -277,27 +354,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     final userData = snapshot.data!;
                     return Column(
                       children: [
-                                          ListTile(
-                    leading: const Icon(Icons.account_circle),
-                    title: Text(userData['name'] ?? 'Unknown Name'),
-                    subtitle: Text('@${userData['username'] ?? 'unknown'}'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _editProfile(userData),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.email),
-                    title: const Text('Email'),
-                    subtitle: Text(userData['email'] ?? 'No email provided'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _editEmail(userData),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.key),
-                    title: const Text('GitHub Account'),
-                    subtitle: const Text('Manage authentication'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _manageGitHubAccount(userData),
-                  ),
+                        ListTile(
+                          leading: const Icon(Icons.account_circle),
+                          title: Text(userData['name'] ?? 'Unknown Name'),
+                          subtitle: Text('@${userData['username'] ?? 'unknown'}'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => _editProfile(userData),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.email),
+                          title: const Text('Email'),
+                          subtitle: Text(userData['email'] ?? 'No email provided'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => _editEmail(userData),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.key),
+                          title: const Text('GitHub Account'),
+                          subtitle: const Text('Manage authentication'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => _manageGitHubAccount(userData),
+                        ),
                       ],
                     );
                   } else {
@@ -690,10 +767,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               Navigator.of(context).pop();
               // Simulate export process
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Exporting data to JSON...'),
                     backgroundColor: AppThemes.primaryBlue,
@@ -705,7 +783,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // In a real implementation, this would generate and download the file
               await Future.delayed(const Duration(seconds: 2));
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Data exported successfully!'),
                     backgroundColor: AppThemes.successGreen,
@@ -719,10 +797,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               Navigator.of(context).pop();
               // Simulate export process
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Exporting data to CSV...'),
                     backgroundColor: AppThemes.primaryBlue,
@@ -734,7 +813,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // In a real implementation, this would generate and download the file
               await Future.delayed(const Duration(seconds: 2));
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Data exported successfully!'),
                     backgroundColor: AppThemes.successGreen,
@@ -788,7 +867,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () async {
+                        onPressed: () async {
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               // Save profile changes
               await UserIdentityService.storeUserIdentity(
                 username: userData['username'] ?? '',
@@ -797,8 +878,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 email: userData['email'],
               );
               if (mounted) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
+                navigator.pop();
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Profile updated successfully!'),
                     backgroundColor: AppThemes.successGreen,
@@ -841,7 +922,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () async {
+                        onPressed: () async {
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               // Save email changes
               await UserIdentityService.storeUserIdentity(
                 username: userData['username'] ?? '',
@@ -850,8 +933,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 email: userData['email'],
               );
               if (mounted) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
+                navigator.pop();
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Email updated successfully!'),
                     backgroundColor: AppThemes.successGreen,
@@ -897,13 +980,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              final navigator = Navigator.of(context);
+              navigator.pop();
               // Navigate to logout
               final githubService = Provider.of<GitHubService>(context, listen: false);
               await githubService.clearAccessToken();
               await UserIdentityService.clearUserIdentity();
               if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                navigator.pushNamedAndRemoveUntil('/', (route) => false);
               }
             },
             style: TextButton.styleFrom(foregroundColor: AppThemes.errorRed),
@@ -1030,4 +1114,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+
+
+
+
+
 }

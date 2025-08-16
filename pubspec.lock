@@ -422,7 +422,7 @@ packages:
     source: hosted
     version: "0.7.2"
   json_annotation:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: json_annotation
       sha256: "1ce844379ca14835a50d2f019a3099f419082cfdd231cd86a142af94dd5c6bb1"
@@ -525,6 +525,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  onnxruntime:
+    dependency: "direct main"
+    description:
+      name: onnxruntime
+      sha256: e77ec05acafc135cc5fe7bcdf11b101b39f06513c9d5e9fa02cb1929f6bac72a
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
   package_config:
     dependency: transitive
     description:

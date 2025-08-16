@@ -6,6 +6,8 @@ import '../services/markdown_service.dart';
 import '../services/user_identity_service.dart';
 import '../theme/app_themes.dart';
 
+import '../widgets/simple_ai_widget.dart';
+
 class ProjectDetailScreen extends StatefulWidget {
   final Project project;
 
@@ -205,6 +207,15 @@ All User Data: $userData''';
                 ),
               ),
             ),
+            
+            const SizedBox(height: 24),
+            
+
+            
+            const SizedBox(height: 24),
+            
+            // Simple AI Section
+            SimpleAIWidget(project: widget.project),
             
             const SizedBox(height: 24),
             
