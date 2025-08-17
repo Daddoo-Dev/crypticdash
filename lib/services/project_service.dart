@@ -47,6 +47,78 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
+  /// Refresh a specific project by reloading it from GitHub
+  Future<void> refreshProject(Project project) async {
+    try {
+      // Find the project in the list
+      final index = _projects.indexWhere((p) => p.id == project.id);
+      if (index != -1) {
+        // Fetch the updated TODO content directly
+        final todoContent = await _fetchTodoFromGitHubDirect(project.owner, project.repoName);
+        
+        if (todoContent != null) {
+          // Parse the updated content and update the project
+          final updatedProject = _parseProjectContentFromContent(
+            project, 
+            todoContent, 
+            project.owner
+          );
+          if (updatedProject != null) {
+            _projects[index] = updatedProject;
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error refreshing project ${project.name}: $e');
+    }
+  }
+
+  /// Fetch TODO content directly without creating a full GitHubRepository object
+  Future<String?> _fetchTodoFromGitHubDirect(String owner, String repoName) async {
+    try {
+      // Try to fetch {reponame}-todo.md from the repository first
+      final todoFileName = '${repoName}-todo.md';
+      final todoContent = await _githubService.getFileContent(owner, repoName, todoFileName);
+      if (todoContent != null) {
+        debugPrint('Found $todoFileName on GitHub for $repoName');
+        return todoContent;
+      }
+      
+      // Try alternative names
+      final alternativeNames = ['TODO.md', 'PROJECT.md', 'README.md'];
+      for (final fileName in alternativeNames) {
+        final content = await _githubService.getFileContent(owner, repoName, fileName);
+        if (content != null) {
+          debugPrint('Found $fileName on GitHub for $repoName');
+          return content;
+        }
+      }
+      
+      debugPrint('No TODO file found for $repoName');
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching TODO from GitHub for $repoName: $e');
+      return null;
+    }
+  }
+
+  /// Parse project content from TODO content string
+  Project? _parseProjectContentFromContent(Project existingProject, String todoContent, String owner) {
+    try {
+      final enhancedProject = MarkdownService.parseEnhancedTodoMarkdown(todoContent, owner, existingProject.repoName);
+      if (enhancedProject != null) {
+        return enhancedProject.copyWith(
+          lastUpdated: DateTime.now(),
+        );
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error parsing project content: $e');
+      return null;
+    }
+  }
+
   Future<Project?> _loadProjectFromRepo(GitHubRepository repo) async {
     try {
       debugPrint('=== Loading Project Debug ===');

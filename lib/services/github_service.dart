@@ -329,38 +329,39 @@ class GitHubService extends ChangeNotifier {
     String message,
   ) async {
     try {
-      // First, try to get the current file to see if it exists
+      // Use proper filename format: {reponame}-TODO.md
+      final todoFileName = '$repo-TODO.md';
+      
+      // First, try to get the current file SHA to see if it exists
       String? currentSha;
       try {
-        final currentFile = await getFileContent(owner, repo, 'TODO.md');
-        if (currentFile != null) {
-          // Extract SHA from the file info
-          final fileInfo = json.decode(currentFile);
-          currentSha = fileInfo['sha'];
+        currentSha = await getFileSha(owner, repo, todoFileName);
+        if (currentSha != null) {
+          LoggingService.debug('Found existing $todoFileName with SHA: $currentSha');
         }
       } catch (e) {
         // File doesn't exist yet, that's okay for creation
-        LoggingService.debug('TODO.md does not exist yet, will create new file');
+        LoggingService.debug('$todoFileName does not exist yet, will create new file');
       }
 
       final success = await createOrUpdateFile(
         owner,
         repo,
-        'TODO.md',
+        todoFileName,
         content,
         message,
         sha: currentSha,
       );
 
       if (success) {
-        LoggingService.success('Successfully created/updated TODO.md in $owner/$repo');
+        LoggingService.success('Successfully created/updated $todoFileName in $owner/$repo');
       } else {
-        LoggingService.error('Failed to create/update TODO.md in $owner/$repo');
+        LoggingService.error('Failed to create/update $todoFileName in $owner/$repo');
       }
 
       return success;
     } catch (e) {
-      LoggingService.error('Error creating/updating TODO.md: $e', e, StackTrace.current);
+      LoggingService.error('Error creating/updating TODO file: $e', e, StackTrace.current);
       return false;
     }
   }

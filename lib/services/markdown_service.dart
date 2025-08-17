@@ -82,9 +82,9 @@ class MarkdownService {
         if (line.isEmpty) continue;
         
         // Check for headers
-        if (line.startsWith('# ')) {
-          projectName = line.substring(2).trim();
-        } else if (line.startsWith('## ') && line.contains('Overview')) {
+        // Note: We don't override projectName from the TODO file content
+        // The project should always display the actual repository name
+        if (line.startsWith('## ') && line.contains('Overview')) {
           currentSection = 0;
         } else if (line.startsWith('## ') && line.contains('Progress:')) {
           currentSection = 1;
@@ -167,10 +167,9 @@ class MarkdownService {
         debugPrint('Line $i: "$line" (currentSection: "$currentSection", inSubSection: $inSubSection)');
         
         // Check for headers
-        if (line.startsWith('# ')) {
-          projectName = line.substring(2).trim();
-          debugPrint('Project name: $projectName');
-        } else if (line.startsWith('## ')) {
+        // Note: We don't override projectName from the TODO file content
+        // The project should always display the actual repository name
+        if (line.startsWith('## ')) {
           // Main section header
           if (line.contains('Overview') || line.contains('📋')) {
             currentSection = 'Project Overview';

@@ -4,6 +4,8 @@ import 'dart:convert';
 import '../models/project.dart';
 import '../services/onnx_ai_service.dart';
 import '../services/github_service.dart';
+import '../services/project_service.dart';
+
 
 import 'yeti_loading_widget.dart';
 
@@ -31,141 +33,129 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
           margin: const EdgeInsets.all(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      aiService.enabled ? Icons.smart_toy : Icons.smart_toy_outlined,
-                      color: aiService.enabled ? Colors.blue : Colors.grey,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'ONNX AI Assistant',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                         child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Row(
+                   children: [
+                     Icon(
+                       aiService.enabled ? Icons.ac_unit : Icons.ac_unit_outlined,
+                       color: aiService.enabled ? Colors.blue : Colors.grey,
+                       size: 24,
+                     ),
+                     const SizedBox(width: 8),
+                     const Text(
+                       'Yeti Assistant',
+                       style: TextStyle(
+                         fontSize: 18,
+                         fontWeight: FontWeight.bold,
+                       ),
+                     ),
+                     const Spacer(),
+                     _buildStatusBadge(aiService),
+                   ],
+                 ),
+                 const SizedBox(height: 16),
+                 if (_isAnalyzing) ...[
+                   // Show centered Yeti animation during processing
+                                       Container(
+                      width: double.infinity,
+                      height: 300, // Increased height to prevent overflow
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50]?.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildModelInfo(),
-                const SizedBox(height: 16),
-                _buildStatusMessage(aiService),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _isAnalyzing || !aiService.modelLoaded
-                            ? null
-                            : () => _generateTODOMD(context, aiService),
-                        icon: _isAnalyzing
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.task_alt),
-                        label: Text(_isAnalyzing ? 'Analyzing...' : 'Analyze & Generate TODO.md'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+                      child: SingleChildScrollView(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min, // Prevent expansion
+                            children: [
+                              const YetiLoadingWidget(message: 'Yeti is analyzing your repository...'),
+                              const SizedBox(height: 16),
+                              const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'This may take a few moments...',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _isAnalyzing || !aiService.modelLoaded
-                            ? null
-                            : () => _generateInsights(context, aiService),
-                        icon: _isAnalyzing
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.lightbulb),
-                        label: Text(_isAnalyzing ? 'Analyzing...' : 'Generate Insights'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_isAnalyzing) ...[
-                  const SizedBox(height: 16),
-                  const YetiLoadingWidget(message: 'AI is analyzing your repository...'),
-                ],
-              ],
-            ),
+                 ] else ...[
+                   // Show the button when not analyzing
+                   Tooltip(
+                     message: 'Analyze repository and generate TODO.md file',
+                     child: SizedBox(
+                       width: double.infinity,
+                       child: ElevatedButton.icon(
+                         onPressed: !aiService.modelLoaded
+                             ? null
+                             : () => _generateTODOMD(context, aiService),
+                         icon: const Icon(Icons.task_alt),
+                         label: const Text('Analyze & Generate TODO'),
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: Colors.blue,
+                           foregroundColor: Colors.white,
+                           padding: const EdgeInsets.symmetric(vertical: 16),
+                         ),
+                       ),
+                     ),
+                   ),
+                 ],
+               ],
+             ),
           ),
         );
       },
     );
   }
 
-  Widget _buildModelInfo() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Model: Gemma 3 270M IT',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Text('Size: 1.0 GB (ONNX Q4)'),
-          Text('Purpose: Local AI analysis and TODO generation'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusMessage(ONNXAIService aiService) {
-    Color statusColor;
+  Widget _buildStatusBadge(ONNXAIService aiService) {
+    Color badgeColor;
+    String statusText;
     IconData statusIcon;
 
     if (aiService.statusMessage.contains('Ready')) {
-      statusColor = Colors.green;
+      badgeColor = Colors.green;
+      statusText = 'Ready';
       statusIcon = Icons.check_circle;
     } else if (aiService.statusMessage.contains('failed') || 
                aiService.statusMessage.contains('error')) {
-      statusColor = Colors.red;
+      badgeColor = Colors.red;
+      statusText = 'Failed to Load';
       statusIcon = Icons.error;
     } else {
-      statusColor = Colors.orange;
-      statusIcon = Icons.info;
+      badgeColor = Colors.orange;
+      statusText = 'Loading';
+      statusIcon = Icons.hourglass_empty;
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.1),
-        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
+        color: badgeColor.withValues(alpha: 0.1),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(statusIcon, color: statusColor, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              aiService.statusMessage,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.w500,
-              ),
+          Icon(statusIcon, color: badgeColor, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            statusText,
+            style: TextStyle(
+              color: badgeColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -177,22 +167,28 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
     // Store context before async gap
     final currentContext = context;
     
+    // Define todoFileName outside try block so it's accessible in the title
+    final todoFileName = '${widget.project.repoName}-TODO.md';
+    
     try {
-      setState(() {
-        _isAnalyzing = true;
-      });
+      // Add error boundary for setState
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = true;
+        });
+      }
       
-      // Check if TODO.md already exists
+      // Check if {reponame}-TODO.md already exists
       String? existingTodo = '';
       try {
         final githubService = Provider.of<GitHubService>(currentContext, listen: false);
         existingTodo = await githubService.getFileContent(
           widget.project.owner, 
           widget.project.repoName, 
-          'TODO.md'
+          todoFileName
         );
       } catch (e) {
-        // TODO.md doesn't exist, that's fine
+        // {reponame}-TODO.md doesn't exist, that's fine
         existingTodo = null;
       }
       
@@ -210,14 +206,14 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
         dependencies: repositoryContent['dependencies'],
       );
       
-      if (currentContext.mounted) {
-        setState(() {
-          _isAnalyzing = false;
-        });
-        
-        final title = existingTodo != null ? 'Updated TODO.md' : 'Generated TODO.md';
-        _showGeneratedContent(currentContext, title, todoContent);
-      }
+             if (currentContext.mounted) {
+         setState(() {
+           _isAnalyzing = false;
+         });
+         
+         // Show preview dialog with save/cancel options
+         _showPreviewDialog(context, todoContent, todoFileName, existingTodo != null);
+       }
     } catch (e) {
       if (currentContext.mounted) {
         setState(() {
@@ -228,60 +224,89 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
     }
   }
 
-  Future<void> _generateInsights(BuildContext context, ONNXAIService aiService) async {
-    // Store context before async gap
-    final currentContext = context;
+  void _showPreviewDialog(BuildContext context, String todoContent, String todoFileName, bool isUpdate) {
+    final title = isUpdate ? 'Updated $todoFileName' : 'Generated $todoFileName';
     
-    try {
-      setState(() {
-        _isAnalyzing = true;
-      });
-      
-      // Gather actual repository content for AI analysis
-      final repositoryContent = await _gatherRepositoryContent(currentContext);
-      
-      final insights = await aiService.analyzeRepositoryAndGenerateTodos(
-        widget.project.name,
-        readmeContent: repositoryContent['readme'],
-        pubspecContent: repositoryContent['pubspec'],
-        packageJsonContent: repositoryContent['packageJson'],
-        sourceFiles: repositoryContent['sourceFiles'],
-        dependencies: repositoryContent['dependencies'],
-      );
-      
-      if (currentContext.mounted) {
-        setState(() {
-          _isAnalyzing = false;
-        });
-        _showGeneratedContent(currentContext, 'Project Insights', insights);
-      }
-    } catch (e) {
-      if (currentContext.mounted) {
-        setState(() {
-          _isAnalyzing = false;
-        });
-        _showErrorDialog(currentContext, 'Error generating insights: $e');
-      }
-    }
-  }
-
-  void _showGeneratedContent(BuildContext context, String title, String content) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(title),
-        content: SingleChildScrollView(
-          child: SelectableText(content),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: SingleChildScrollView(
+            child: SelectableText(todoContent),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _saveToGitHub(todoContent, todoFileName);
+            },
+            child: const Text('Save to GitHub'),
           ),
         ],
       ),
     );
   }
+  
+  Future<void> _saveToGitHub(String todoContent, String todoFileName) async {
+    try {
+      final githubService = Provider.of<GitHubService>(context, listen: false);
+      
+      final success = await githubService.createOrUpdateTODOMD(
+        widget.project.owner,
+        widget.project.repoName,
+        todoContent,
+        'Update TODO.md with AI-generated analysis',
+      );
+      
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ $todoFileName saved to GitHub successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Refresh the project data to show updated TODO content
+          try {
+            final projectService = Provider.of<ProjectService>(context, listen: false);
+            await projectService.refreshProject(widget.project);
+          } catch (e) {
+            // Log error but don't show to user since save was successful
+            debugPrint('Error refreshing project after save: $e');
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Failed to save to GitHub. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error saving to GitHub: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+
 
   /// Gather actual repository content for AI analysis
   Future<Map<String, dynamic>> _gatherRepositoryContent(BuildContext context) async {

@@ -15,6 +15,9 @@ import 'services/onnx_ai_service.dart';
 import 'theme/app_themes.dart';
 
 void main() async {
+  // Disable mouse tracking to prevent crashes
+  WidgetsFlutterBinding.ensureInitialized();
+  
   try {
     // Try to load .env file with proper path handling
     final currentDir = Directory.current.path;
@@ -109,6 +112,16 @@ class CrypticDashApp extends StatelessWidget {
             darkTheme: AppThemes.darkTheme,
             themeMode: themeService.themeMode,
             home: const AppFlowWrapper(),
+            // Disable mouse tracking to prevent crashes
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  // Disable mouse tracking
+                  accessibleNavigation: false,
+                ),
+                child: child!,
+              );
+            },
           );
         },
       ),

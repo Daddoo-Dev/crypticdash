@@ -706,11 +706,11 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
     final assetsProgress = _calculateAssetsProgress(sourceFiles);
     
     // Display progress by category
-    buffer.writeln('**Documentation**: ${documentationProgress}% ${_getProgressEmoji(documentationProgress)}');
-    buffer.writeln('**Dependencies**: ${dependenciesProgress}% ${_getProgressEmoji(dependenciesProgress)}');
-    buffer.writeln('**Project Structure**: ${structureProgress}% ${_getProgressEmoji(structureProgress)}');
-    buffer.writeln('**Testing**: ${testingProgress}% ${_getProgressEmoji(testingProgress)}');
-    buffer.writeln('**Assets**: ${assetsProgress}% ${_getProgressEmoji(assetsProgress)}');
+    buffer.writeln('**Documentation**: $documentationProgress% ${_getProgressEmoji(documentationProgress)}');
+    buffer.writeln('**Dependencies**: $dependenciesProgress% ${_getProgressEmoji(dependenciesProgress)}');
+    buffer.writeln('**Project Structure**: $structureProgress% ${_getProgressEmoji(structureProgress)}');
+    buffer.writeln('**Testing**: $testingProgress% ${_getProgressEmoji(testingProgress)}');
+    buffer.writeln('**Assets**: $assetsProgress% ${_getProgressEmoji(assetsProgress)}');
     buffer.writeln();
     
     // Calculate overall weighted progress
