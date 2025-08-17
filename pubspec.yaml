@@ -39,7 +39,7 @@ dependencies:
   provider: ^6.1.1
   
   # HTTP and API
-  http: ^1.1.0
+  http: ^1.5.0
   dio: ^5.4.0
   
   # GitHub API
@@ -55,7 +55,6 @@ dependencies:
   
   # File Operations
   path_provider: ^2.1.1
-  file_picker: ^6.1.1
   
   # UI Components
   url_launcher: ^6.2.1
@@ -64,15 +63,18 @@ dependencies:
   intl: ^0.18.1
   crypto: ^3.0.3
   
+  # Animation
+  image_sequence_animator: 2.0.0
+  
   # OAuth Authentication
   flutter_dotenv: ^5.1.0
   
   # Local AI Model Support
   # ONNX Runtime for real AI inference
-  onnxruntime: ^1.4.1
   
   # JSON Processing for Model Configs
   json_annotation: ^4.8.1
+  onnxruntime: ^1.4.1
 
 dev_dependencies:
   flutter_test:
@@ -104,6 +106,8 @@ flutter:
     - assets/icons/
     - assets/images/
     - assets/ai_models/mistral/
+    - assets/ai_models/gemma_3_270m_it/
+    - assets/yeti_animation/
     - TODO_TEMPLATE.md
 
   # An image asset can refer to one or more resolution-specific "variants", see

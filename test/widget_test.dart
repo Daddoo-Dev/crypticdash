@@ -10,12 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crypticdash/main.dart';
 
 void main() {
-  testWidgets('CrypticDash app smoke test', (WidgetTester tester) async {
+  testWidgets('crypticdash app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const CrypticDashApp());
 
     // Verify that our app shows the auth screen initially
-    expect(find.text('CrypticDash'), findsOneWidget);
+    expect(find.text('crypticdash'), findsOneWidget);
     expect(find.text('Connect to GitHub'), findsOneWidget);
   });
 }

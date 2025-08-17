@@ -98,8 +98,8 @@ class ThemeService extends ChangeNotifier {
   
   // Get the appropriate app name based on current theme
   String getAppName() {
-    // Always return "CrypticDash" regardless of theme
-    return 'CrypticDash';
+    // Always return the GitHub repository name - never override with AI-generated content
+    return 'crypticdash';
   }
   
   // Get the appropriate app title based on current theme

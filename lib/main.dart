@@ -10,7 +10,7 @@ import 'services/settings_service.dart';
 import 'services/logging_service.dart';
 
 import 'services/app_flow_service.dart';
-import 'services/mistral_ai_service.dart';
+import 'services/onnx_ai_service.dart';
 
 import 'theme/app_themes.dart';
 
@@ -37,7 +37,7 @@ void main() async {
         '.env',
         '../.env',
         '../../.env',
-        '${currentDir}/.env',
+        '$currentDir/.env',
       ];
       
       for (final path in altPaths) {
@@ -79,13 +79,13 @@ class CrypticDashApp extends StatelessWidget {
           create: (context) => SettingsService(),
         ),
 
-        ChangeNotifierProxyProvider<GitHubService, MistralAIService>(
-          create: (context) => MistralAIService(),
+        ChangeNotifierProxyProvider<GitHubService, ONNXAIService>(
+          create: (context) => ONNXAIService(),
           update: (context, githubService, previous) {
             if (previous != null) {
               return previous;
             }
-            return MistralAIService();
+            return ONNXAIService();
           },
         ),
         ChangeNotifierProxyProvider2<GitHubService, ProjectSelectionService, ProjectService>(

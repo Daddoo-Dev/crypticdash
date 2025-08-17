@@ -118,7 +118,7 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    widget.isSetupMode ? 'Welcome to CrypticDash!' : 'Manage Your Projects',
+                    widget.isSetupMode ? 'Welcome to crypticdash!' : 'Manage Your Projects',
                     style: AppThemes.headlineMedium.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),

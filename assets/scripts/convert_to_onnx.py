@@ -14,8 +14,8 @@ def convert_gemma_to_onnx():
     
     print("🚀 Starting Gemma 3 270M-IT to ONNX conversion...")
     
-    # Model path (current directory)
-    model_path = "."
+    # Model path (Gemma model directory)
+    model_path = "../ai_models/gemma_3_270m_it"
     
     try:
         print("📖 Loading Gemma 3 270M-IT model and tokenizer...")
@@ -37,9 +37,10 @@ def convert_gemma_to_onnx():
                 self.model = model
                 
             def forward(self, input_ids):
-                # Simple forward pass without complex attention mechanisms
-                outputs = self.model.model(input_ids=input_ids)
-                return outputs.last_hidden_state
+                # Use a simpler approach - just get the logits
+                with torch.no_grad():
+                    outputs = self.model(input_ids=input_ids, use_cache=False)
+                    return outputs.logits
         
         print(f"✅ Model loaded successfully!")
         print(f"   - Model type: {type(model).__name__}")
@@ -67,21 +68,22 @@ def convert_gemma_to_onnx():
         
         output_path = "model.onnx"
         
-        # Use traditional ONNX exporter with simplified wrapper
+        # Use newer PyTorch export method with compatible opset
         torch.onnx.export(
             wrapper_model,
             dummy_input,
             output_path,
             input_names=['input_ids'],
-            output_names=['last_hidden_state'],
+            output_names=['logits'],
             dynamic_axes={
                 'input_ids': {0: 'batch_size', 1: 'sequence_length'},
-                'last_hidden_state': {0: 'batch_size', 1: 'sequence_length'}
+                'logits': {0: 'batch_size', 1: 'sequence_length'}
             },
-            opset_version=17,  # Use latest ONNX opset for better compatibility
+            opset_version=11,  # Use compatible opset for ONNX Runtime 1.4.1
             do_constant_folding=True,
             export_params=True,
-            verbose=False
+            verbose=False,
+            dynamo=True  # Use new export method
         )
         
         print(f"✅ ONNX conversion completed!")
@@ -205,10 +207,12 @@ if __name__ == "__main__":
     print("🤖 Gemma 3 270M-IT to ONNX Converter")
     print("=" * 60)
     
-    # Check if we're in the right directory
-    if not os.path.exists("model.safetensors"):
+    # Check if the model files exist in the correct path
+    model_path = "../ai_models/gemma_3_270m_it"
+    if not os.path.exists(os.path.join(model_path, "model.safetensors")):
         print("❌ Error: model.safetensors not found!")
-        print("   Please run this script from the gemma-3-270m directory")
+        print(f"   Expected path: {os.path.abspath(model_path)}/model.safetensors")
+        print("   Please check that the Gemma model files are downloaded correctly")
         exit(1)
     
     # Convert the model

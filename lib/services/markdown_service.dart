@@ -442,7 +442,7 @@ Project started on ${DateTime.now().toIso8601String()}
     buffer.writeln();
     
     buffer.writeln('## 📋 Project Overview');
-    buffer.writeln('A development project managed through CrypticDash.');
+            buffer.writeln('A development project managed through crypticdash.');
     buffer.writeln();
     
     buffer.writeln('## 🎯 Project Goals');

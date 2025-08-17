@@ -137,11 +137,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       builder: (context, githubService, child) {
                         final hasToken = githubService.accessToken != null;
                         return Chip(
-                          // ignore: prefer_const_constructors
                           label: Text(hasToken ? 'Connected' : 'Not Connected'),
                           backgroundColor: hasToken 
-                              ? AppThemes.successGreen.withOpacity(0.2)
-                              : AppThemes.errorRed.withOpacity(0.2),
+                              ? AppThemes.successGreen.withValues(alpha: 0.2)
+                              : AppThemes.errorRed.withValues(alpha: 0.2),
                           labelStyle: TextStyle(
                             color: hasToken ? AppThemes.successGreen : AppThemes.errorRed,
                           ),
@@ -151,8 +150,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: _showTokenManagement,
                   ),
                   ListTile(
-                    leading: const Icon(Icons.sync),
-                    title: const Text('Last Sync'),
+                    leading: Icon(Icons.sync),
+                    title: Text('Last Sync'),
                     subtitle: Text('Data last updated: ${settingsService.getFormattedLastSyncTime()}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.refresh),
@@ -161,8 +160,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   ListTile(
-                    leading: const Icon(Icons.api),
-                    title: const Text('API Rate Limit'),
+                    leading: Icon(Icons.api),
+                    title: Text('API Rate Limit'),
                     subtitle: const Text('Monitor GitHub API usage'),
                     onTap: _showApiInfo,
                   ),
@@ -414,13 +413,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _showHelp,
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.info),
-                    title: const Text('About CrypticDash'),
-                    subtitle: const Text('Version and license information'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _showAbout,
-                  ),
+                                     ListTile(
+                     leading: const Icon(Icons.info),
+                     title: const Text('About crypticdash'),
+                     subtitle: const Text('Version and license information'),
+                     trailing: const Icon(Icons.chevron_right),
+                     onTap: _showAbout,
+                   ),
                 ],
               ),
             ),
@@ -1093,18 +1092,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('About CrypticDash'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('CrypticDash v1.0.0'),
-            SizedBox(height: 8),
-            Text('A comprehensive dashboard for managing multiple GitHub projects with integrated to-do lists and progress tracking.'),
-            SizedBox(height: 16),
-            Text('© 2025 CrypticDash Team'),
-          ],
-        ),
+                 title: const Text('About crypticdash'),
+         content: const Column(
+           mainAxisSize: MainAxisSize.min,
+           crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
+             Text('crypticdash v1.0.0'),
+             SizedBox(height: 8),
+             Text('A comprehensive dashboard for managing multiple GitHub projects with integrated to-do lists and progress tracking.'),
+             SizedBox(height: 16),
+             Text('© 2025 crypticdash Team'),
+           ],
+         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

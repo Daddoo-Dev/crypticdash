@@ -321,6 +321,50 @@ class GitHubService extends ChangeNotifier {
     }
   }
 
+
+  Future<bool> createOrUpdateTODOMD(
+    String owner,
+    String repo,
+    String content,
+    String message,
+  ) async {
+    try {
+      // First, try to get the current file to see if it exists
+      String? currentSha;
+      try {
+        final currentFile = await getFileContent(owner, repo, 'TODO.md');
+        if (currentFile != null) {
+          // Extract SHA from the file info
+          final fileInfo = json.decode(currentFile);
+          currentSha = fileInfo['sha'];
+        }
+      } catch (e) {
+        // File doesn't exist yet, that's okay for creation
+        LoggingService.debug('TODO.md does not exist yet, will create new file');
+      }
+
+      final success = await createOrUpdateFile(
+        owner,
+        repo,
+        'TODO.md',
+        content,
+        message,
+        sha: currentSha,
+      );
+
+      if (success) {
+        LoggingService.success('Successfully created/updated TODO.md in $owner/$repo');
+      } else {
+        LoggingService.error('Failed to create/update TODO.md in $owner/$repo');
+      }
+
+      return success;
+    } catch (e) {
+      LoggingService.error('Error creating/updating TODO.md: $e', e, StackTrace.current);
+      return false;
+    }
+  }
+
   /// Get the contents of a directory (files and subdirectories)
   Future<List<Map<String, dynamic>>> getDirectoryContents(String owner, String repo, [String path = '']) async {
     try {
