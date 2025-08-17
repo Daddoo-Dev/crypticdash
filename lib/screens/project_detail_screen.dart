@@ -90,7 +90,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 _lastError = '''Debug Info - No Error
 Authenticated User: $authenticatedUsername (ID: $authenticatedUserId)
 Project: ${widget.project.owner}/${widget.project.repoName}
-File: ${widget.project.repoName}-todo.md
+        File: ${widget.project.repoName}-TODO.md
 To-dos: ${widget.project.todos.length}
 Repository URL: ${widget.project.repositoryUrl}
 Project ID: ${widget.project.id}
@@ -276,7 +276,7 @@ All User Data: $userData''';
                         style: AppThemes.bodyMedium.copyWith(color: Colors.white70),
                       ),
                       Text(
-                        'File Path: ${widget.project.repoName}-todo.md',
+                        'File Path: ${widget.project.repoName}-TODO.md',
                         style: AppThemes.bodyMedium.copyWith(color: Colors.white70),
                       ),
                       Text(
@@ -400,11 +400,11 @@ All User Data: $userData''';
       // Try to get the current file SHA, but handle the case where it might not exist
       String? currentSha;
       try {
-        debugPrint('Getting file SHA for: ${widget.project.owner}/${widget.project.repoName}/${widget.project.repoName}-todo.md');
+        debugPrint('Getting file SHA for: ${widget.project.owner}/${widget.project.repoName}/${widget.project.repoName}-TODO.md');
         currentSha = await githubService.getFileSha(
           widget.project.owner,
           widget.project.repoName,
-          '${widget.project.repoName}-todo.md',
+          '${widget.project.repoName}-TODO.md',
         );
         debugPrint('File SHA result: $currentSha');
       } catch (e) {
@@ -416,14 +416,14 @@ All User Data: $userData''';
       debugPrint('Calling createOrUpdateFile with:');
       debugPrint('  Owner: ${widget.project.owner}');
       debugPrint('  Repo: ${widget.project.repoName}');
-      debugPrint('  Path: ${widget.project.repoName}-todo.md');
+                debugPrint('  Path: ${widget.project.repoName}-TODO.md');
       debugPrint('  Content length: ${updatedContent.length}');
       debugPrint('  SHA: $currentSha');
       
       final success = await githubService.createOrUpdateFile(
         widget.project.owner,
         widget.project.repoName,
-        '${widget.project.repoName}-todo.md',
+                  '${widget.project.repoName}-TODO.md',
         updatedContent,
         'Update todo completion status: ${todo.isCompleted ? 'completed' : 'pending'} ${todo.title}',
         sha: currentSha,

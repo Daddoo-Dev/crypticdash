@@ -183,8 +183,19 @@ class MarkdownService {
             currentSection = 'Documentation';
           } else if (line.contains('Notes') || line.contains('📝')) {
             currentSection = 'Notes & Updates';
-          } else if (line.contains('Progress') || line.contains('📊')) {
+          } else if (line.contains('Progress') || line.contains('📊') || line.contains('Current Progress')) {
             currentSection = 'Progress Tracking';
+          } else if (line.contains('Next Steps') || line.contains('Next') || line.contains('Steps')) {
+            currentSection = 'Next Steps';
+          } else if (line.contains('Roadmap') || line.contains('Road') || line.contains('Plan')) {
+            currentSection = 'Roadmap';
+          } else if (line.contains('Features') || line.contains('Capabilities')) {
+            currentSection = 'Features';
+          } else if (line.contains('Requirements') || line.contains('Needs')) {
+            currentSection = 'Requirements';
+          } else {
+            // Default section for any other headers
+            currentSection = line.substring(3).trim();
           }
           inSubSection = false;
           debugPrint('Main section: $currentSection');
@@ -192,10 +203,26 @@ class MarkdownService {
           // Sub-section header
           inSubSection = true;
           debugPrint('Sub-section: $line');
-        } else if (line.startsWith('- [x] ') || line.startsWith('- [ ] ')) {
-          // Todo item
-          final isCompleted = line.startsWith('- [x] ');
-          final title = line.substring(6).trim();
+        } else if (line.startsWith('- [x] ') || line.startsWith('- [ ] ') || 
+                   line.contains('✅') || line.contains('⚙️') || line.contains('📊') || 
+                   line.contains('📚') || line.contains('📝') || line.contains('📦') || 
+                   line.contains('🔧') || line.contains('🚀') || line.contains('🧪') || 
+                   line.contains('🎯') || line.contains('🔄') || line.contains('🔍')) {
+          // Todo item - handle both standard checkboxes and emoji indicators
+          bool isCompleted = false;
+          String title = '';
+          
+          if (line.startsWith('- [x] ')) {
+            isCompleted = true;
+            title = line.substring(6).trim();
+          } else if (line.startsWith('- [ ] ')) {
+            isCompleted = false;
+            title = line.substring(6).trim();
+          } else {
+            // Handle emoji-based todos
+            isCompleted = line.contains('✅'); // Only ✅ indicates completed
+            title = line.substring(2).trim(); // Remove the "- " prefix
+          }
           
           // Determine section based on current context
           String sectionName = currentSection.isNotEmpty ? currentSection : 'General Tasks';

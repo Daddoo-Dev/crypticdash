@@ -77,8 +77,8 @@ class ProjectService extends ChangeNotifier {
   /// Fetch TODO content directly without creating a full GitHubRepository object
   Future<String?> _fetchTodoFromGitHubDirect(String owner, String repoName) async {
     try {
-      // Try to fetch {reponame}-todo.md from the repository first
-      final todoFileName = '${repoName}-todo.md';
+      // Try to fetch {reponame}-TODO.md from the repository first (correct format)
+      final todoFileName = '${repoName}-TODO.md';
       final todoContent = await _githubService.getFileContent(owner, repoName, todoFileName);
       if (todoContent != null) {
         debugPrint('Found $todoFileName on GitHub for $repoName');
@@ -159,8 +159,8 @@ class ProjectService extends ChangeNotifier {
 
   Future<String?> _fetchTodoFromGitHub(GitHubRepository repo) async {
     try {
-      // Try to fetch {reponame}-todo.md from the repository first
-      final todoFileName = '${repo.name}-todo.md';
+      // Try to fetch {reponame}-TODO.md from the repository first (correct format)
+      final todoFileName = '${repo.name}-TODO.md';
       final todoContent = await _githubService.getFileContent(repo.owner, repo.name, todoFileName);
       if (todoContent != null) {
         debugPrint('Found $todoFileName on GitHub for ${repo.name}');
@@ -238,7 +238,7 @@ class ProjectService extends ChangeNotifier {
 
   Future<void> updateTodoFileOnGitHub(String owner, String repo, String content) async {
     try {
-      final fileName = '$repo-todo.md';
+              final fileName = '$repo-TODO.md';
       const message = 'Update to-do file with proper formatting';
       
       // Get current file SHA if it exists
