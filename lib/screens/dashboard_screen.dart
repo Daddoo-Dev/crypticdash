@@ -28,10 +28,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Use a post-frame callback to avoid BuildContext issues
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadProjects();
-    });
+    _loadProjects();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Remove redundant loadProjects call here
   }
 
   Future<void> _loadProjects() async {
@@ -154,6 +157,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 icon: const Icon(Icons.refresh),
                 onPressed: _loadProjects,
                 tooltip: 'Refresh Projects',
+              ),
+              IconButton(
+                icon: const Icon(Icons.bug_report),
+                onPressed: () {
+                  // Debug: Show current project count and selection info
+                  final projectService = Provider.of<ProjectService>(context, listen: false);
+                  final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Debug: ${projectService.projects.length} projects, ${projectSelectionService.selectedProjectCount} selected repos'),
+                      backgroundColor: AppThemes.warningOrange,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  
+                  // Also try to reload projects
+                  projectService.loadProjects();
+                },
+                tooltip: 'Debug Info',
               ),
               IconButton(
                 icon: const Icon(Icons.manage_accounts),

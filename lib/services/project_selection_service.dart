@@ -27,8 +27,22 @@ class ProjectSelectionService extends ChangeNotifier {
     _loadSettings();
   }
   
+  /// Test method to manually trigger the callback
+  void testCallback() {
+    debugPrint('ProjectSelectionService: Testing callback manually');
+    if (_onSelectionChanged != null) {
+      debugPrint('ProjectSelectionService: Calling test callback');
+      _onSelectionChanged?.call();
+      debugPrint('ProjectSelectionService: Test callback completed');
+    } else {
+      debugPrint('ProjectSelectionService: ERROR - No callback available for test');
+    }
+  }
+  
   void setOnSelectionChangedCallback(VoidCallback callback) {
+    debugPrint('ProjectSelectionService: setOnSelectionChangedCallback called');
     _onSelectionChanged = callback;
+    debugPrint('ProjectSelectionService: Callback set to: ${callback != null ? "valid callback" : "null"}');
   }
   
   /// Initialize Gist service for cross-device sync
@@ -141,15 +155,29 @@ class ProjectSelectionService extends ChangeNotifier {
         await prefs.setString(_lastGistSyncKey, _lastGistSync!.toIso8601String());
       }
       
-      // Sync to Gist if enabled
+      debugPrint('ProjectSelectionService: Local settings saved successfully');
+      debugPrint('ProjectSelectionService: Selected IDs: $stringIds');
+      
+      // Sync to Gist if enabled (but don't fail if this doesn't work)
       if (_isGistEnabled) {
-        await _syncToGist();
+        try {
+          await _syncToGist();
+        } catch (e) {
+          debugPrint('Gist sync failed, but local storage succeeded: $e');
+          // Don't let Gist failure break local storage
+        }
       }
       
       // Notify other services that selection has changed
-      _onSelectionChanged?.call();
+      if (_onSelectionChanged != null) {
+        debugPrint('ProjectSelectionService: Calling selection changed callback');
+        _onSelectionChanged?.call();
+      } else {
+        debugPrint('ProjectSelectionService: No selection changed callback set');
+      }
     } catch (e) {
-      // Handle error silently
+      debugPrint('Error saving settings: $e');
+      rethrow;
     }
   }
   
@@ -158,13 +186,37 @@ class ProjectSelectionService extends ChangeNotifier {
   }
   
   Future<void> toggleProjectSelection(int projectId) async {
+    debugPrint('ProjectSelectionService: toggleProjectSelection called for ID: $projectId');
+    debugPrint('ProjectSelectionService: Current selections before toggle: $_selectedProjectIds');
+    
     if (_selectedProjectIds.contains(projectId)) {
       _selectedProjectIds.remove(projectId);
+      debugPrint('ProjectSelectionService: Removed project $projectId from selections');
     } else {
+      // Check if this repository is already selected
+      if (_selectedProjectIds.contains(projectId)) {
+        debugPrint('ProjectSelectionService: Repository $projectId is already selected, ignoring duplicate');
+        return; // Don't add duplicates
+      }
       _selectedProjectIds.add(projectId);
+      debugPrint('ProjectSelectionService: Added project $projectId to selections');
     }
+    
+    debugPrint('ProjectSelectionService: Selections after toggle: $_selectedProjectIds');
+    debugPrint('ProjectSelectionService: About to call notifyListeners()');
     notifyListeners();
+    debugPrint('ProjectSelectionService: About to call _saveSettings()');
     await _saveSettings();
+    
+    debugPrint('ProjectSelectionService: Settings saved, notifying listeners');
+    debugPrint('ProjectSelectionService: _onSelectionChanged callback exists: ${_onSelectionChanged != null}');
+    if (_onSelectionChanged != null) {
+      debugPrint('ProjectSelectionService: About to call _onSelectionChanged callback');
+      _onSelectionChanged?.call();
+      debugPrint('ProjectSelectionService: _onSelectionChanged callback completed');
+    } else {
+      debugPrint('ProjectSelectionService: WARNING - No selection changed callback set!');
+    }
   }
   
   Future<void> selectAllProjects(List<GitHubRepository> repositories) async {

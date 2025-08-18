@@ -5,6 +5,7 @@ import '../services/github_service.dart';
 import '../services/project_selection_service.dart';
 import '../theme/app_themes.dart';
 import 'dashboard_screen.dart';
+import '../services/project_service.dart'; // Added import for ProjectService
 
 class ProjectSelectionScreen extends StatefulWidget {
   final bool isSetupMode;
@@ -177,26 +178,84 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
             // Action Buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        projectSelectionService.selectAllProjects(_filteredRepositories);
-                      },
-                      icon: const Icon(Icons.select_all),
-                      label: const Text('Select All'),
-                    ),
+                  // Select All / Clear All row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            projectSelectionService.selectAllProjects(_filteredRepositories);
+                          },
+                          icon: const Icon(Icons.select_all),
+                          label: const Text('Select All'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            projectSelectionService.deselectAllProjects();
+                          },
+                          icon: const Icon(Icons.clear_all),
+                          label: const Text('Clear All'),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        projectSelectionService.deselectAllProjects();
-                      },
-                      icon: const Icon(Icons.clear_all),
-                      label: const Text('Clear All'),
-                    ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Main action buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: selectedCount > 0 ? _proceedToDashboard : null,
+                        icon: const Icon(Icons.dashboard),
+                        label: Text('Proceed to Dashboard (${selectedCount})'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemes.primaryBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                      if (widget.isSetupMode) ...[
+                        const SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          onPressed: selectedCount > 0 ? _saveAndReturn : null,
+                          icon: const Icon(Icons.save),
+                          label: const Text('Save & Return'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppThemes.successGreen,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // Debug: Manually trigger project refresh
+                          final projectService = Provider.of<ProjectService>(context, listen: false);
+                          projectService.notifyListeners();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Debug: Manually refreshing projects'),
+                              backgroundColor: AppThemes.warningOrange,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.bug_report),
+                        label: const Text('Debug Refresh'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemes.warningOrange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

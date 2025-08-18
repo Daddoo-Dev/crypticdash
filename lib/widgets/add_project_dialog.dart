@@ -4,6 +4,7 @@ import '../services/project_service.dart';
 import '../services/github_service.dart';
 import '../models/github_repository.dart';
 import '../theme/app_themes.dart';
+import '../services/project_selection_service.dart';
 
 class AddProjectDialog extends StatefulWidget {
   const AddProjectDialog({super.key});
@@ -16,7 +17,6 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
   bool _isLoading = false;
   List<GitHubRepository> _repositories = [];
   GitHubRepository? _selectedRepository;
-  String _selectedTemplate = 'Web App';
 
   @override
   void initState() {
@@ -64,8 +64,13 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
     });
 
     try {
+      // First, add the repository to the selection
+      final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
+      await projectSelectionService.toggleProjectSelection(_selectedRepository!.id);
+      
+      // Then refresh the projects
       final projectService = Provider.of<ProjectService>(context, listen: false);
-      await projectService.loadProjects();
+      projectService.notifyListeners();
       
       if (mounted) {
         Navigator.of(context).pop();
@@ -164,117 +169,59 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
                       )
                     else
                       Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppThemes.neutralGrey),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButtonFormField<GitHubRepository>(
-                          value: _selectedRepository,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        width: double.infinity,
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppThemes.neutralGrey),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          hint: const Text('Choose a repository...'),
-                          items: _repositories.map((repo) {
-                            return DropdownMenuItem(
-                              value: repo,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    repo.name,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    repo.description.isNotEmpty 
-                                        ? repo.description 
-                                        : 'No description',
-                                    style: const TextStyle(
-                                      color: AppThemes.neutralGrey,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedRepository = value;
-                            });
-                          },
-                        ),
-                      ),
-
-                    const SizedBox(height: 24),
-
-                    // Template Selection
-                    Text(
-                      'Project Template',
-                      style: AppThemes.titleLarge,
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        'Web App',
-                        'Mobile App',
-                        'API',
-                        'Library',
-                        'CLI Tool',
-                        'Custom',
-                      ].map((template) {
-                        return FilterChip(
-                          label: Text(template),
-                          selected: _selectedTemplate == template,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedTemplate = template;
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Template Preview
-                    if (_selectedTemplate != 'Custom') ...[
-                      Text(
-                        'Template Preview',
-                        style: AppThemes.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppThemes.lightGrey,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppThemes.neutralGrey),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _selectedTemplate,
-                              style: AppThemes.titleMedium.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          child: DropdownButtonFormField<GitHubRepository>(
+                            value: _selectedRepository,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'A ${_selectedTemplate.toLowerCase()} project template with common development tasks and milestones.',
-                              style: AppThemes.bodyMedium,
-                            ),
-                          ],
+                            hint: const Text('Choose a repository...'),
+                            isExpanded: true,
+                            items: _repositories.map((repo) {
+                              return DropdownMenuItem(
+                                value: repo,
+                                child: Container(
+                                  constraints: const BoxConstraints(minHeight: 40),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        repo.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        repo.description.isNotEmpty 
+                                            ? repo.description 
+                                            : 'No description',
+                                        style: const TextStyle(
+                                          color: AppThemes.neutralGrey,
+                                          fontSize: 12,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedRepository = value;
+                              });
+                            },
+                          ),
                         ),
                       ),
-                    ],
 
                     const SizedBox(height: 32),
 

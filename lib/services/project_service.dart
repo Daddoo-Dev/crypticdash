@@ -12,24 +12,59 @@ class ProjectService extends ChangeNotifier {
   final List<Project> _projects = [];
 
   ProjectService(this._githubService, this._projectSelectionService) {
-    // Set up callback to refresh projects when selection changes
-    // Use a post-frame callback to ensure the service is fully initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _projectSelectionService.setOnSelectionChangedCallback(() {
-        loadProjects();
-      });
-      
-      // Initialize Gist service for cross-device sync
-      _initializeGistService();
-    });
+    debugPrint('ProjectService: Constructor called');
+    // Remove automatic loading - let the UI control when to load
+    // loadProjects();
+    
+    // Set up callback for when project selection changes
+    _projectSelectionService.addListener(_onProjectSelectionChanged);
+    
+    // Initialize Gist service with retry logic
+    _initializeGistServiceWithRetry();
   }
   
+  /// Manually trigger Gist initialization (useful for testing or when user identity becomes available)
+  Future<void> initializeGistService() async {
+    final hasIdentity = await UserIdentityService.hasStoredIdentity();
+    if (hasIdentity) {
+      await _initializeGistService();
+    } else {
+      debugPrint('ProjectService: Cannot initialize Gist - user identity not available');
+    }
+  }
+  
+  /// Initialize Gist service with retry logic for user identity
+  Future<void> _initializeGistServiceWithRetry() async {
+    // Wait a bit for user identity to be loaded from storage
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    // Check if user identity is available
+    final hasIdentity = await UserIdentityService.hasStoredIdentity();
+    if (hasIdentity) {
+      await _initializeGistService();
+    } else {
+      debugPrint('ProjectService: User identity not available yet, will retry later');
+      // Retry after another delay
+      Future.delayed(const Duration(seconds: 2), () {
+        _initializeGistServiceWithRetry();
+      });
+    }
+  }
+
+  void _onProjectSelectionChanged() {
+    debugPrint('ProjectService: Project selection changed, notifying listeners');
+    notifyListeners();
+  }
+
   /// Initialize Gist service for cross-device sync
   Future<void> _initializeGistService() async {
     try {
       // Get the GitHub token and username
       final token = _githubService.accessToken;
       final username = await UserIdentityService.getUsername();
+      
+      debugPrint('ProjectService: Gist init - Token: ${token != null ? "exists" : "null"}');
+      debugPrint('ProjectService: Gist init - Username: $username');
       
       if (token != null && username != null) {
         await _projectSelectionService.initializeGistService(token, username);
@@ -46,21 +81,42 @@ class ProjectService extends ChangeNotifier {
 
   Future<void> loadProjects() async {
     try {
+      debugPrint('ProjectService: loadProjects called');
       final allRepos = await _githubService.getUserRepositories();
+      debugPrint('ProjectService: Got ${allRepos.length} total repositories from GitHub');
       
       // Filter to only selected repositories if ProjectSelectionService is available
       List<GitHubRepository> selectedRepos;
       selectedRepos = _projectSelectionService.getFilteredRepositories(allRepos);
+      debugPrint('ProjectService: Filtered to ${selectedRepos.length} selected repositories');
+      debugPrint('ProjectService: Selected repo IDs: ${selectedRepos.map((r) => r.id).toList()}');
       
       _projects.clear();
 
       for (final repo in selectedRepos) {
-        final project = await _loadProjectFromRepo(repo);
-        if (project != null) {
-          _projects.add(project);
+        debugPrint('ProjectService: Loading project for repo: ${repo.name} (ID: ${repo.id})');
+        
+        // Check if project already exists to prevent duplicates
+        final existingProjectIndex = _projects.indexWhere((p) => p.id == repo.id);
+        if (existingProjectIndex != -1) {
+          debugPrint('ProjectService: Project ${repo.name} already exists, updating instead of adding');
+          // Update existing project
+          final updatedProject = await _loadProjectFromRepo(repo);
+          if (updatedProject != null) {
+            _projects[existingProjectIndex] = updatedProject;
+            debugPrint('ProjectService: Updated existing project: ${updatedProject.name}');
+          }
+        } else {
+          // Add new project
+          final project = await _loadProjectFromRepo(repo);
+          if (project != null) {
+            _projects.add(project);
+            debugPrint('ProjectService: Successfully added project: ${project.name}');
+          }
         }
       }
 
+      debugPrint('ProjectService: Final projects list has ${_projects.length} projects');
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading projects: $e');
