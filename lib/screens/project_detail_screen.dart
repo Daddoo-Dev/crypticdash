@@ -4,6 +4,7 @@ import '../models/project.dart';
 import '../services/github_service.dart';
 import '../services/markdown_service.dart';
 import '../services/user_identity_service.dart';
+import '../services/project_selection_service.dart';
 import '../theme/app_themes.dart';
 
 import '../widgets/simple_ai_widget.dart';
@@ -105,6 +106,11 @@ All User Data: $userData''';
               // Refresh functionality handled by dashboard
             },
             tooltip: 'Refresh',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _showDeleteProjectDialog(context),
+            tooltip: 'Remove Project',
           ),
         ],
       ),
@@ -210,7 +216,18 @@ All User Data: $userData''';
             
             const SizedBox(height: 24),
             
-
+            // Remove Project Button
+            Center(
+              child: OutlinedButton.icon(
+                onPressed: () => _showDeleteProjectDialog(context),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remove Project from App'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppThemes.errorRed,
+                  side: BorderSide(color: AppThemes.errorRed),
+                ),
+              ),
+            ),
             
             const SizedBox(height: 24),
             
@@ -566,5 +583,77 @@ All User Data: $userData''';
     }
 
     return groupedTodos;
+  }
+
+  void _showDeleteProjectDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Project'),
+        content: Text(
+          'Are you sure you want to remove "${widget.project.name}" from the app?\n\n'
+          'This will:\n'
+          '• Remove the project from your dashboard\n'
+          '• Keep the repository on GitHub\n'
+          '• Remove any local project data\n\n'
+          'You can always add it back later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteProject();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemes.errorRed,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Remove Project'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteProject() async {
+    try {
+      // Get the ProjectSelectionService to remove the project
+      final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
+      
+      // Convert string ID to int for the service
+      final projectId = int.tryParse(widget.project.id);
+      if (projectId == null) {
+        throw Exception('Invalid project ID format');
+      }
+      
+      // Remove the project from selections
+      await projectSelectionService.toggleProjectSelection(projectId);
+      
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Project "${widget.project.name}" removed successfully'),
+            backgroundColor: AppThemes.successGreen,
+          ),
+        );
+        
+        // Navigate back to dashboard
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to remove project: $e'),
+            backgroundColor: AppThemes.errorRed,
+          ),
+        );
+      }
+    }
   }
 }
