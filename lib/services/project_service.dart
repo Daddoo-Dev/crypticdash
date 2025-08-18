@@ -18,7 +18,28 @@ class ProjectService extends ChangeNotifier {
       _projectSelectionService.setOnSelectionChangedCallback(() {
         loadProjects();
       });
+      
+      // Initialize Gist service for cross-device sync
+      _initializeGistService();
     });
+  }
+  
+  /// Initialize Gist service for cross-device sync
+  Future<void> _initializeGistService() async {
+    try {
+      // Get the GitHub token and username
+      final token = _githubService.accessToken;
+      final username = await UserIdentityService.getUsername();
+      
+      if (token != null && username != null) {
+        await _projectSelectionService.initializeGistService(token, username);
+        debugPrint('Gist service initialized successfully');
+      } else {
+        debugPrint('Cannot initialize Gist service: missing token or username');
+      }
+    } catch (e) {
+      debugPrint('Error initializing Gist service: $e');
+    }
   }
 
   List<Project> get projects => List.unmodifiable(_projects);
@@ -78,7 +99,7 @@ class ProjectService extends ChangeNotifier {
   Future<String?> _fetchTodoFromGitHubDirect(String owner, String repoName) async {
     try {
       // Try to fetch {reponame}-TODO.md from the repository first (correct format)
-      final todoFileName = '${repoName}-TODO.md';
+      final todoFileName = '$repoName-TODO.md';
       final todoContent = await _githubService.getFileContent(owner, repoName, todoFileName);
       if (todoContent != null) {
         debugPrint('Found $todoFileName on GitHub for $repoName');

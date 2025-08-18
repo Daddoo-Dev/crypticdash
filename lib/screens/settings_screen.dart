@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
 import '../services/mistral_ai_service.dart';
+import '../services/project_selection_service.dart';
 
 import '../services/settings_service.dart';
 import '../theme/app_themes.dart';
@@ -164,6 +166,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Text('API Rate Limit'),
                     subtitle: const Text('Monitor GitHub API usage'),
                     onTap: _showApiInfo,
+                  ),
+                  const Divider(),
+                  Consumer<ProjectSelectionService>(
+                    builder: (context, projectSelectionService, child) {
+                      return Column(
+                        children: [
+                          SwitchListTile(
+                            secondary: const Icon(Icons.cloud_sync),
+                            title: const Text('Cross-Device Sync'),
+                            subtitle: const Text('Sync repository selections across devices using GitHub Gist'),
+                            value: projectSelectionService.isGistEnabled,
+                            onChanged: (value) {
+                              if (value) {
+                                _enableGistSync(projectSelectionService);
+                              } else {
+                                _disableGistSync(projectSelectionService);
+                              }
+                            },
+                          ),
+                          if (projectSelectionService.isGistEnabled) ...[
+                            ListTile(
+                              leading: const Icon(Icons.sync),
+                              title: const Text('Last Gist Sync'),
+                              subtitle: Text(
+                                projectSelectionService.lastGistSync != null
+                                    ? 'Last synced: ${_formatDateTime(projectSelectionService.lastGistSync!)}'
+                                    : 'Never synced',
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.refresh),
+                                onPressed: () => _forceGistSync(projectSelectionService),
+                                tooltip: 'Force Sync',
+                              ),
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.info),
+                              title: const Text('Sync Status'),
+                              subtitle: const Text('Repository selections are synced across devices'),
+                              trailing: const Icon(Icons.check_circle, color: AppThemes.successGreen),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -1114,9 +1160,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _enableGistSync(ProjectSelectionService projectSelectionService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enable Cross-Device Sync'),
+        content: const Text('This will enable cross-device sync using GitHub Gist. Your repository selections will be stored in your GitHub Gist.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              Navigator.of(context).pop();
+              await projectSelectionService.enableGistSync();
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Cross-device sync enabled! Your repository selections are now synced.'),
+                    backgroundColor: AppThemes.successGreen,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            child: const Text('Enable Sync'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  void _disableGistSync(ProjectSelectionService projectSelectionService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Disable Cross-Device Sync'),
+        content: const Text('This will disable cross-device sync. Your repository selections will no longer be synced across devices.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              Navigator.of(context).pop();
+              await projectSelectionService.disableGistSync();
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Cross-device sync disabled.'),
+                    backgroundColor: AppThemes.warningOrange,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            child: const Text('Disable Sync'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  void _forceGistSync(ProjectSelectionService projectSelectionService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Force Gist Sync'),
+        content: const Text('This will force a sync of your repository selections to your GitHub Gist. This might overwrite existing selections.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              Navigator.of(context).pop();
+              await projectSelectionService.forceGistSync();
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Repository selections synced to Gist.'),
+                    backgroundColor: AppThemes.successGreen,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            child: const Text('Force Sync'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  String _formatDateTime(DateTime dateTime) {
+    return DateFormat('MM/dd/yyyy HH:mm').format(dateTime);
+  }
 
 
 }
