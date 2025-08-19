@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
-import '../services/mistral_ai_service.dart';
+import '../services/onnx_ai_service.dart';
 import '../services/project_selection_service.dart';
 
 import '../services/settings_service.dart';
@@ -72,41 +72,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                                        Consumer<MistralAIService>(
+                                        Consumer<ONNXAIService>(
                       builder: (context, aiService, child) {
                         return Column(
                           children: [
                             SwitchListTile(
-                              title: const Text('Enable Mistral AI'),
-                              subtitle: const Text('Turn on local AI-powered insights and TODO.md generation'),
+                              title: const Text('Enable AI Insights'),
+                              subtitle: const Text('Turn on AI-powered project analysis and TODO generation'),
                               value: aiService.enabled,
                               onChanged: (value) => value ? aiService.enable() : aiService.disable(),
                             ),
                             ListTile(
-                              title: const Text('AI Model'),
-                              subtitle: const Text('Mistral 7B Instruct (Local)'),
-                              trailing: const Icon(Icons.check_circle, color: AppThemes.successGreen),
-                            ),
-                            ListTile(
-                              title: const Text('Model Status'),
-                              subtitle: const Text(
-                                'Bundled with app - Always available',
+                              title: const Text('AI Status'),
+                              subtitle: Text(
+                                aiService.modelLoaded ? 'Ready to analyze projects' : 'Loading AI model...',
                                 style: TextStyle(
-                                  color: AppThemes.successGreen,
+                                  color: aiService.modelLoaded ? AppThemes.successGreen : AppThemes.warningOrange,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              trailing: const Icon(Icons.check_circle, color: AppThemes.successGreen),
-                            ),
-                            ListTile(
-                              title: const Text('Model Size'),
-                              subtitle: const Text('4.37 GB (Q4_K_M)'),
-                            ),
-                            ListTile(
-                              title: const Text('AI Status'),
-                              subtitle: Text(aiService.statusMessage),
                               trailing: Icon(
-                                aiService.modelLoaded ? Icons.check_circle : Icons.info,
+                                aiService.modelLoaded ? Icons.check_circle : Icons.hourglass_empty,
                                 color: aiService.modelLoaded ? AppThemes.successGreen : AppThemes.warningOrange,
                               ),
                             ),
@@ -459,13 +445,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _showHelp,
                   ),
-                                     ListTile(
-                     leading: const Icon(Icons.info),
+                  ListTile(
+                    leading: const Icon(Icons.info),
                      title: const Text('About crypticdash'),
-                     subtitle: const Text('Version and license information'),
-                     trailing: const Icon(Icons.chevron_right),
-                     onTap: _showAbout,
-                   ),
+                    subtitle: const Text('Version and license information'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _showAbout,
+                  ),
                 ],
               ),
             ),
@@ -1139,17 +1125,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
                  title: const Text('About crypticdash'),
-         content: const Column(
-           mainAxisSize: MainAxisSize.min,
-           crossAxisAlignment: CrossAxisAlignment.start,
-           children: [
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
              Text('crypticdash v1.0.0'),
-             SizedBox(height: 8),
-             Text('A comprehensive dashboard for managing multiple GitHub projects with integrated to-do lists and progress tracking.'),
-             SizedBox(height: 16),
+            SizedBox(height: 8),
+            Text('A comprehensive dashboard for managing multiple GitHub projects with integrated to-do lists and progress tracking.'),
+            SizedBox(height: 16),
              Text('© 2025 crypticdash Team'),
-           ],
-         ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

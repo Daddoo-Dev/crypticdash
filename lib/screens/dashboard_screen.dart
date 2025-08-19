@@ -159,26 +159,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 tooltip: 'Refresh Projects',
               ),
               IconButton(
-                icon: const Icon(Icons.bug_report),
-                onPressed: () {
-                  // Debug: Show current project count and selection info
-                  final projectService = Provider.of<ProjectService>(context, listen: false);
-                  final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
-                  
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Debug: ${projectService.projects.length} projects, ${projectSelectionService.selectedProjectCount} selected repos'),
-                      backgroundColor: AppThemes.warningOrange,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                  
-                  // Also try to reload projects
-                  projectService.loadProjects();
-                },
-                tooltip: 'Debug Info',
-              ),
-              IconButton(
                 icon: const Icon(Icons.manage_accounts),
                 onPressed: () => _showProjectManagement(context),
                 tooltip: 'Manage Projects',

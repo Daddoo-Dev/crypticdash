@@ -66,7 +66,7 @@ Yes, you absolutely can bundle a model to do the job—and it’s a smart move i
 
 #### ✅ **What You’ll Need**
 1. **Local or Hosted Model**  
-   - Use a lightweight open-source LLM like [Phi-2](https://huggingface.co/microsoft/phi-2), [Mistral](https://mistral.ai/news/introducing-mistral-7b/), or [CodeLlama](https://github.com/facebookresearch/codellama) for code understanding.
+   - Use a lightweight open-source LLM like [Phi-2](https://huggingface.co/microsoft/phi-2), [Gemma 3 270M IT](https://huggingface.co/google/gemma-3-270m-it), or [CodeLlama](https://github.com/facebookresearch/codellama) for code understanding.
    - Host it via a backend service (e.g., FastAPI, Node.js) or bundle it locally if you're building a desktop app.
 
 2. **Repo Parsing Logic**  
@@ -122,7 +122,7 @@ Exactly—that’s the sweet spot. You don’t need a model that’s perfect, ju
 Here’s a lean setup that balances usefulness with simplicity:
 
 #### 🧠 **Model Choice**
-- **Phi-2** or **Mistral 7B**: Small enough to run locally or on modest cloud infra.
+- **Gemma 3 270M IT** or **Phi-2**: Small enough to run locally or on modest cloud infra.
 - Fine-tune optional, but even out-of-the-box they can handle basic code reasoning.
 
 #### 📦 **Input Strategy**
@@ -191,7 +191,7 @@ That’s a smart move—keeping the model local and desktop-only gives you contr
 ### 🧰 **Recommended Setup**
 
 #### 1. **Model**
-- Use a small LLM like **Phi-2**, **Mistral 7B**, or **CodeLlama**.
+- Use a small LLM like **Gemma 3 270M IT**, **Phi-2**, or **CodeLlama**.
 - Bundle it with your app using:
   - [Ollama](https://ollama.com/) for easy local model serving
   - [GGUF](https://github.com/ggerganov/ggml) format for lightweight inference

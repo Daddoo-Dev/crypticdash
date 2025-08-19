@@ -46,7 +46,7 @@ CrypticDash now includes powerful AI-powered features to help you manage your Gi
 | **Anthropic** | Claude-3 Opus, Sonnet, Haiku | Detailed analysis, technical recommendations |
 | **Azure** | GPT-4, GPT-35 Turbo | Enterprise environments, compliance |
 | **Google** | Gemini Pro, Gemini Flash | Fast responses, cost-effective |
-| **Local** | Llama-3, Mistral, CodeLlama | Privacy-focused, offline use |
+| **Local** | Gemma 3 270M IT, Phi-2, CodeLlama | Privacy-focused, offline use |
 
 ### **AI Parameters**
 

@@ -5,6 +5,7 @@ import '../services/github_service.dart';
 import '../services/markdown_service.dart';
 import '../services/user_identity_service.dart';
 import '../services/project_selection_service.dart';
+import '../services/project_service.dart';
 import '../theme/app_themes.dart';
 
 import '../widgets/simple_ai_widget.dart';
@@ -24,7 +25,6 @@ class ProjectDetailScreen extends StatefulWidget {
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   String _filterType = 'All'; // All, Completed, Pending
   bool _isUpdating = false; // Track if we're updating a to-do
-  String _lastError = ''; // Store the last error for display
   
   List<Todo> get _filteredTodos {
     final todos = widget.project.todos;
@@ -80,37 +80,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         title: Text(widget.project.name),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () async {
-              // Show debug info
-              final authenticatedUsername = await UserIdentityService.getUsername();
-              final authenticatedUserId = await UserIdentityService.getUserId();
-              final userData = await UserIdentityService.getAllUserData();
-              
-              setState(() {
-                _lastError = '''Debug Info - No Error
-Authenticated User: $authenticatedUsername (ID: $authenticatedUserId)
-Project: ${widget.project.owner}/${widget.project.repoName}
-        File: ${widget.project.repoName}-TODO.md
-To-dos: ${widget.project.todos.length}
-Repository URL: ${widget.project.repositoryUrl}
-Project ID: ${widget.project.id}
-All User Data: $userData''';
-              });
-            },
-            tooltip: 'Debug Info',
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               // Refresh functionality handled by dashboard
             },
             tooltip: 'Refresh',
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _showDeleteProjectDialog(context),
-            tooltip: 'Remove Project',
           ),
         ],
       ),
@@ -216,118 +190,60 @@ All User Data: $userData''';
             
             const SizedBox(height: 24),
             
-            // Remove Project Button
-            Center(
-              child: OutlinedButton.icon(
-                onPressed: () => _showDeleteProjectDialog(context),
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Remove Project from App'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppThemes.errorRed,
-                  side: BorderSide(color: AppThemes.errorRed),
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
             // Simple AI Section
             SimpleAIWidget(project: widget.project),
             
             const SizedBox(height: 24),
             
-            // Filter Section
+            // Filter Section and Add To-Do Button Row
             Row(
               children: [
-                Text(
-                  'Filter:',
-                  style: AppThemes.titleMedium.copyWith(
-                    color: colorScheme.onSurface,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        'Filter:',
+                        style: AppThemes.titleMedium.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          'All',
+                          'Pending',
+                          'Completed',
+                        ].map((filter) {
+                          return FilterChip(
+                            label: Text(filter),
+                            selected: _filterType == filter,
+                            onSelected: (selected) {
+                              setState(() {
+                                _filterType = filter;
+                              });
+                            },
+                            selectedColor: colorScheme.primaryContainer,
+                            checkmarkColor: colorScheme.onPrimaryContainer,
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    'All',
-                    'Pending',
-                    'Completed',
-                  ].map((filter) {
-                    return FilterChip(
-                      label: Text(filter),
-                      selected: _filterType == filter,
-                      onSelected: (selected) {
-                        setState(() {
-                          _filterType = filter;
-                        });
-                      },
-                      selectedColor: colorScheme.primaryContainer,
-                      checkmarkColor: colorScheme.onPrimaryContainer,
-                    );
-                  }).toList(),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddTodoDialog(context),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add To-Do'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
                 ),
               ],
             ),
             
             const SizedBox(height: 16),
-            
-            // Debug Info Section (only show if there's an error)
-            if (_lastError.isNotEmpty) ...[
-              Card(
-                color: Colors.red.shade900,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Debug Info - Last Error:',
-                        style: AppThemes.titleMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Project: ${widget.project.owner}/${widget.project.repoName}',
-                        style: AppThemes.bodyMedium.copyWith(color: Colors.white70),
-                      ),
-                      Text(
-                        'File Path: ${widget.project.repoName}-TODO.md',
-                        style: AppThemes.bodyMedium.copyWith(color: Colors.white70),
-                      ),
-                      Text(
-                        'Error: $_lastError',
-                        style: AppThemes.bodyMedium.copyWith(color: Colors.white),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _lastError = '';
-                                });
-                              },
-                              child: const Text('Clear Error', style: TextStyle(color: Colors.white)),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              // Copy error to clipboard
-                              // This would require clipboard package
-                            },
-                            child: const Text('Copy Error', style: TextStyle(color: Colors.white)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
             
             // To-dos Section
             Text(
@@ -341,6 +257,21 @@ All User Data: $userData''';
             
             // To-dos List
             ..._buildGroupedTodos(),
+            
+            const SizedBox(height: 32),
+            
+            // Remove Project Button (at the bottom)
+            Center(
+              child: OutlinedButton.icon(
+                onPressed: () => _showDeleteProjectDialog(context),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remove Project from App'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppThemes.errorRed,
+                  side: BorderSide(color: AppThemes.errorRed),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -470,7 +401,7 @@ All User Data: $userData''';
       setState(() {});
       
       // Store the detailed error for display
-      _lastError = e.toString();
+      // _lastError = e.toString(); // Removed
       setState(() {});
       
       if (mounted) {
@@ -595,7 +526,7 @@ All User Data: $userData''';
           'This will:\n'
           '• Remove the project from your dashboard\n'
           '• Keep the repository on GitHub\n'
-          '• Remove any local project data\n\n'
+          '• Remove any local data from this app\n\n'
           'You can always add it back later.',
         ),
         actions: [
@@ -633,6 +564,10 @@ All User Data: $userData''';
       // Remove the project from selections
       await projectSelectionService.toggleProjectSelection(projectId);
       
+      // Also notify the ProjectService to refresh its list
+      final projectService = Provider.of<ProjectService>(context, listen: false);
+      projectService.notifyListeners();
+      
       if (mounted) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -651,6 +586,200 @@ All User Data: $userData''';
           SnackBar(
             content: Text('Failed to remove project: $e'),
             backgroundColor: AppThemes.errorRed,
+          ),
+        );
+      }
+    }
+  }
+  
+  void _showAddTodoDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final notesController = TextEditingController();
+    String? selectedSection;
+    
+    // Get available sections from existing todos
+    final availableSections = widget.project.todos
+        .map((todo) => todo.section)
+        .where((section) => section != null)
+        .map((section) => section!)
+        .toSet()
+        .toList();
+    
+    // Add common sections if they don't exist
+    final commonSections = [
+      'Current Progress',
+      'Next Steps', 
+      'Roadmap',
+      'General Tasks',
+      'Bug Fixes',
+      'Features',
+      'Documentation',
+      'Testing',
+      'Deployment',
+    ];
+    
+    for (final section in commonSections) {
+      if (!availableSections.contains(section)) {
+        availableSections.add(section);
+      }
+    }
+    
+    // Sort sections by priority
+    availableSections.sort((a, b) => 
+        MarkdownService.getSectionPriority(a).compareTo(MarkdownService.getSectionPriority(b)));
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New To-Do'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'To-Do Title *',
+                hintText: 'Enter the to-do title',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Notes (Optional)',
+                hintText: 'Add any additional details',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: selectedSection,
+              decoration: const InputDecoration(
+                labelText: 'Category (Optional)',
+                border: OutlineInputBorder(),
+              ),
+              hint: const Text('Select a category or leave blank'),
+              items: [
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('No Category'),
+                ),
+                ...availableSections.map((section) => DropdownMenuItem<String>(
+                  value: section,
+                  child: Text(section),
+                )),
+              ],
+              onChanged: (value) {
+                selectedSection = value;
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (titleController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a to-do title'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              
+              Navigator.of(context).pop();
+              await _addTodo(
+                titleController.text.trim(),
+                notesController.text.trim().isEmpty ? null : notesController.text.trim(),
+                selectedSection,
+              );
+            },
+            child: const Text('Add To-Do'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _addTodo(String title, String? notes, String? section) async {
+    try {
+      // Create new todo with a unique ID
+      final newTodo = Todo(
+        id: '${DateTime.now().millisecondsSinceEpoch}_${title.hashCode}',
+        title: title,
+        notes: notes,
+        section: section ?? 'General Tasks',
+        isCompleted: false,
+        createdAt: DateTime.now(),
+      );
+      
+      // Add to project
+      widget.project.todos.add(newTodo);
+      
+      // Update project progress
+      widget.project.lastUpdated = DateTime.now();
+      
+      // Trigger UI update
+      setState(() {});
+      
+      // Save to GitHub
+      final githubService = Provider.of<GitHubService>(context, listen: false);
+      final updatedContent = MarkdownService.generateEnhancedProjectMarkdown(widget.project);
+      
+      // Get current file SHA
+      String? currentSha;
+      try {
+        currentSha = await githubService.getFileSha(
+          widget.project.owner,
+          widget.project.repoName,
+          '${widget.project.repoName}-TODO.md',
+        );
+      } catch (e) {
+        // File might not exist yet, that's okay for creation
+      }
+      
+      final success = await githubService.createOrUpdateFile(
+        widget.project.owner,
+        widget.project.repoName,
+        '${widget.project.repoName}-TODO.md',
+        updatedContent,
+        'Add new to-do: $title',
+        sha: currentSha,
+      );
+      
+      if (!success) {
+        throw Exception('Failed to save to-do to GitHub');
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('To-do "$title" added successfully!'),
+            backgroundColor: AppThemes.successGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      // Remove from local state on error
+      widget.project.todos.removeLast();
+      setState(() {});
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to add to-do: $e'),
+            backgroundColor: AppThemes.errorRed,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

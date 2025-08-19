@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:onnxruntime/onnxruntime.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:crypticdash/services/logging_service.dart';
 
 class ONNXAIService extends ChangeNotifier {
   bool _enabled = false;
@@ -415,8 +416,20 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
   }) {
     final buffer = StringBuffer();
     
-    buffer.writeln('Analyze this repository and generate specific, actionable TODOs:');
+    // Detect project type first
+    final projectType = _detectProjectType(sourceFiles, pubspecContent, dependencies);
+    
+    buffer.writeln('You are an intelligent project analyzer. Analyze this repository and generate specific, actionable TODOs based on the ACTUAL project content:');
     buffer.writeln('Repository: $repositoryPath');
+    buffer.writeln('Detected Project Type: $projectType');
+    buffer.writeln();
+    
+    buffer.writeln('CRITICAL RULES:');
+    buffer.writeln('1. Generate TODOs based on what is ACTUALLY missing or needs improvement. Do NOT suggest generic tasks that are already implemented.');
+    buffer.writeln('2. Each task should appear ONLY ONCE in the most appropriate category.');
+    buffer.writeln('3. All tasks must be specific to the detected project type ($projectType).');
+    buffer.writeln('4. Do NOT mix frameworks unless the project actually uses multiple frameworks.');
+    buffer.writeln('5. Use framework-specific terminology and tools (e.g., pubspec.yaml for Flutter, requirements.txt for Python).');
     buffer.writeln();
     
     if (readmeContent != null && readmeContent.isNotEmpty) {
@@ -442,10 +455,55 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
       buffer.writeln();
     }
     
+    // Project-specific analysis instructions
+    switch (projectType) {
+      case 'flutter':
+        buffer.writeln('This is a Flutter project. Focus on:');
+        buffer.writeln('- Flutter-specific architecture and best practices');
+        buffer.writeln('- Mobile/web/desktop platform optimization');
+        buffer.writeln('- Flutter testing and CI/CD');
+        buffer.writeln('- Flutter performance and state management');
+        buffer.writeln('- Use Flutter-specific tools: pubspec.yaml, main.dart, lib/, test/');
+        buffer.writeln();
+        break;
+        
+      case 'godot':
+        buffer.writeln('This is a Godot game project. Focus on:');
+        buffer.writeln('- Game development best practices');
+        buffer.writeln('- Mobile game optimization');
+        buffer.writeln('- Game testing and QA processes');
+        buffer.writeln('- Game deployment and distribution');
+        buffer.writeln('- Use Godot-specific tools: project.godot, scenes/, scripts/, assets/');
+        buffer.writeln();
+        break;
+        
+      case 'python':
+        buffer.writeln('This is a Python project. Focus on:');
+        buffer.writeln('- Python development best practices');
+        buffer.writeln('- Python testing and documentation');
+        buffer.writeln('- Python packaging and distribution');
+        buffer.writeln('- Python CI/CD and deployment');
+        buffer.writeln('- Use Python-specific tools: requirements.txt, pyproject.toml, main.py, tests/');
+        buffer.writeln();
+        break;
+        
+      case 'web':
+        buffer.writeln('This is a web project. Focus on:');
+        buffer.writeln('- Web development best practices');
+        buffer.writeln('- Frontend/backend architecture');
+        buffer.writeln('- Web testing and deployment');
+        buffer.writeln('- Web performance and optimization');
+        buffer.writeln('- Use web-specific tools: package.json, index.html, src/, assets/');
+        buffer.writeln();
+        break;
+    }
+    
     buffer.writeln('Based on this actual repository content, generate:');
-    buffer.writeln('1. Current Progress - What\'s already implemented');
-    buffer.writeln('2. Next Steps - What needs to be done next');
-    buffer.writeln('3. Roadmap - Future development plan');
+    buffer.writeln('1. Current Progress - What\'s already implemented (be specific about what exists)');
+    buffer.writeln('2. Next Steps - What actually needs to be done next (based on gaps)');
+    buffer.writeln('3. Roadmap - Future development plan specific to this project type');
+    buffer.writeln();
+    buffer.writeln('REMEMBER: Each task should appear only once, and all tasks must be specific to the $projectType project type.');
     
     return buffer.toString();
   }
@@ -464,19 +522,105 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
     buffer.writeln('# TODO.md for $repositoryPath');
     buffer.writeln();
     
-    // Analyze Current Progress based on actual content
+    // Detect project type for better analysis
+    final projectType = _detectProjectType(sourceFiles, pubspecContent, dependencies);
+    
+    // Analyze Current Progress based on actual content (Project-specific)
     buffer.writeln('## Current Progress');
     if (readmeContent != null && readmeContent.isNotEmpty) {
       buffer.writeln('- ✅ README documentation exists (${readmeContent.length} characters)');
     }
-    if (dependencies != null && dependencies.isNotEmpty) {
-      buffer.writeln('- ✅ Dependencies configured (${dependencies.length} packages)');
-    }
-    if (sourceFiles != null && sourceFiles.isNotEmpty) {
-      buffer.writeln('- ✅ Source code structure established (${sourceFiles.length} files)');
-      
-      // Adaptive code analysis based on project size
-      _addAdaptiveCodeAnalysis(buffer, sourceFiles);
+    
+    // Project-specific progress analysis
+    switch (projectType) {
+      case 'flutter':
+        if (dependencies != null && dependencies.isNotEmpty) {
+          buffer.writeln('- ✅ Flutter dependencies configured (${dependencies.length} packages)');
+        }
+        if (sourceFiles != null && sourceFiles.isNotEmpty) {
+          buffer.writeln('- ✅ Flutter project structure established (${sourceFiles.length} files)');
+          
+          // Check for Flutter-specific components
+          final hasMainDart = sourceFiles.any((f) => f.contains('main.dart'));
+          if (hasMainDart) buffer.writeln('- ✅ Main entry point (main.dart) implemented');
+          
+          final hasLibDir = sourceFiles.any((f) => f.contains('lib/'));
+          if (hasLibDir) buffer.writeln('- ✅ Source code directory (lib/) organized');
+          
+          final hasAssets = sourceFiles.any((f) => f.contains('assets'));
+          if (hasAssets) buffer.writeln('- ✅ Assets directory configured');
+          
+          final hasTests = sourceFiles.any((f) => f.contains('test'));
+          if (hasTests) buffer.writeln('- ✅ Test framework setup');
+          
+          final hasPubspec = sourceFiles.any((f) => f.contains('pubspec.yaml'));
+          if (hasPubspec) buffer.writeln('- ✅ Flutter project configuration (pubspec.yaml)');
+        }
+        break;
+        
+      case 'godot':
+        if (sourceFiles != null && sourceFiles.isNotEmpty) {
+          buffer.writeln('- ✅ Godot project structure established (${sourceFiles.length} files)');
+          
+          // Check for Godot-specific components
+          final hasProjectGodot = sourceFiles.any((f) => f.contains('project.godot'));
+          if (hasProjectGodot) buffer.writeln('- ✅ Godot project configuration (project.godot)');
+          
+          final hasScenes = sourceFiles.any((f) => f.contains('scenes'));
+          if (hasScenes) buffer.writeln('- ✅ Game scenes directory configured');
+          
+          final hasScripts = sourceFiles.any((f) => f.contains('scripts'));
+          if (hasScripts) buffer.writeln('- ✅ Game scripts directory configured');
+          
+          final hasAssets = sourceFiles.any((f) => f.contains('assets'));
+          if (hasAssets) buffer.writeln('- ✅ Game assets directory configured');
+          
+          final hasExport = sourceFiles.any((f) => f.contains('export'));
+          if (hasExport) buffer.writeln('- ✅ Export configurations for platforms');
+        }
+        break;
+        
+      case 'python':
+        if (dependencies != null && dependencies.isNotEmpty) {
+          buffer.writeln('- ✅ Python dependencies configured');
+        }
+        if (sourceFiles != null && sourceFiles.isNotEmpty) {
+          buffer.writeln('- ✅ Python project structure established (${sourceFiles.length} files)');
+          
+          final hasMainPy = sourceFiles.any((f) => f.contains('main.py'));
+          if (hasMainPy) buffer.writeln('- ✅ Main entry point (main.py) implemented');
+          
+          final hasRequirements = sourceFiles.any((f) => f.contains('requirements.txt'));
+          if (hasRequirements) buffer.writeln('- ✅ Python dependencies file (requirements.txt)');
+        }
+        break;
+        
+      case 'web':
+        if (dependencies != null && dependencies.isNotEmpty) {
+          buffer.writeln('- ✅ Web dependencies configured (${dependencies.length} packages)');
+        }
+        if (sourceFiles != null && sourceFiles.isNotEmpty) {
+          buffer.writeln('- ✅ Web project structure established (${sourceFiles.length} files)');
+          
+          final hasIndexHtml = sourceFiles.any((f) => f.contains('index.html'));
+          if (hasIndexHtml) buffer.writeln('- ✅ Main entry point (index.html) implemented');
+          
+          final hasPackageJson = sourceFiles.any((f) => f.contains('package.json'));
+          if (hasPackageJson) buffer.writeln('- ✅ Web dependencies file (package.json)');
+        }
+        break;
+        
+      case 'unknown':
+        if (dependencies != null && dependencies.isNotEmpty) {
+          buffer.writeln('- ✅ Dependencies configured (${dependencies.length} packages)');
+        }
+        if (sourceFiles != null && sourceFiles.isNotEmpty) {
+          buffer.writeln('- ✅ Source code structure established (${sourceFiles.length} files)');
+          
+          // Adaptive code analysis based on project size
+          _addAdaptiveCodeAnalysis(buffer, sourceFiles);
+        }
+        break;
     }
     buffer.writeln();
     
@@ -516,16 +660,12 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
       buffer.writeln();
     }
     
-    // Generate Roadmap
+    // Generate Roadmap based on project type and current state
     buffer.writeln('## Roadmap');
-    buffer.writeln('- 🎯 Complete core feature implementation');
-    buffer.writeln('- 🔍 Add comprehensive testing suite');
-    buffer.writeln('- 📚 Improve documentation and user guides');
-    buffer.writeln('- 🚀 Prepare for production deployment');
-    buffer.writeln('- 🔄 Plan continuous improvement cycle');
+    _generateProjectSpecificRoadmap(buffer, projectType, sourceFiles, dependencies);
     buffer.writeln();
     
-    // Add Progress Metrics
+    // Add progress metrics by category
     _addProgressMetrics(
       buffer,
       readmeContent: readmeContent,
@@ -534,9 +674,73 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
       dependencies: dependencies,
     );
     
-    buffer.writeln('*Generated by ONNX AI based on actual repository analysis - ${DateTime.now().toString().split(' ')[0]}*');
+    // Add project-specific footer
+    buffer.writeln('*Generated by Yeti AI based on actual repository analysis - ${DateTime.now().toString().substring(0, 10)}*');
     
-    return buffer.toString();
+    // Post-process the generated content to ensure quality and consistency
+    final rawContent = buffer.toString();
+    final processedContent = _postProcessGeneratedContent(rawContent, projectType);
+    
+    // Validate and clean the final content
+    final finalContent = _validateAndCleanContent(processedContent, projectType);
+    
+    return finalContent;
+  }
+
+  /// Generate project-specific roadmap based on detected project type
+  void _generateProjectSpecificRoadmap(
+    StringBuffer buffer,
+    String projectType,
+    List<String>? sourceFiles,
+    Map<String, dynamic>? dependencies,
+  ) {
+    buffer.writeln('## Roadmap');
+    
+    switch (projectType) {
+      case 'flutter':
+        buffer.writeln('- 🎯 Complete core Flutter feature implementation');
+        buffer.writeln('- 📱 Optimize for all target platforms (iOS, Android, Web, Desktop)');
+        buffer.writeln('- 🧪 Add comprehensive Flutter testing suite');
+        buffer.writeln('- 📚 Improve Flutter documentation and user guides');
+        buffer.writeln('- 🚀 Prepare Flutter app for production deployment');
+        buffer.writeln('- 🔄 Plan continuous Flutter improvement cycle');
+        break;
+        
+      case 'godot':
+        buffer.writeln('- 🎮 Complete core game mechanics and features');
+        buffer.writeln('- 📱 Optimize for mobile platforms and performance');
+        buffer.writeln('- 🧪 Add comprehensive game testing and QA');
+        buffer.writeln('- 📚 Improve game documentation and user guides');
+        buffer.writeln('- 🚀 Prepare game for app store deployment');
+        buffer.writeln('- 🔄 Plan post-launch content updates');
+        break;
+        
+      case 'python':
+        buffer.writeln('- 🐍 Complete core Python application features');
+        buffer.writeln('- 🧪 Add comprehensive Python testing suite');
+        buffer.writeln('- 📚 Improve Python documentation and API docs');
+        buffer.writeln('- 🚀 Prepare Python app for production deployment');
+        buffer.writeln('- 📦 Set up Python packaging and distribution');
+        buffer.writeln('- 🔄 Plan continuous Python improvement cycle');
+        break;
+        
+      case 'web':
+        buffer.writeln('- 🌐 Complete core web application features');
+        buffer.writeln('- 📱 Optimize for mobile and responsive design');
+        buffer.writeln('- 🧪 Add comprehensive web testing suite');
+        buffer.writeln('- 📚 Improve web documentation and user guides');
+        buffer.writeln('- 🚀 Prepare web app for production deployment');
+        buffer.writeln('- 🔄 Plan continuous web improvement cycle');
+        break;
+        
+      case 'unknown':
+        buffer.writeln('- 🎯 Complete core feature implementation');
+        buffer.writeln('- 🔍 Add comprehensive testing suite');
+        buffer.writeln('- 📚 Improve documentation and user guides');
+        buffer.writeln('- 🚀 Prepare for production deployment');
+        buffer.writeln('- 🔄 Plan continuous improvement cycle');
+        break;
+    }
   }
 
   /// Add adaptive code analysis based on project size
@@ -557,17 +761,38 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
 
   /// Detailed analysis for small projects
   void _addDetailedCodeAnalysis(StringBuffer buffer, List<String> sourceFiles) {
-    final dartFiles = sourceFiles.where((f) => f.endsWith('.dart')).toList();
     final testFiles = sourceFiles.where((f) => f.contains('test')).toList();
     final assetFiles = sourceFiles.where((f) => f.contains('assets')).toList();
     final configFiles = sourceFiles.where((f) => f.endsWith('.yaml') || f.endsWith('.json') || f.endsWith('.toml')).toList();
     
-    if (dartFiles.isNotEmpty) {
+    // Detect file types dynamically
+    final pythonFiles = sourceFiles.where((f) => f.endsWith('.py')).toList();
+    final dartFiles = sourceFiles.where((f) => f.endsWith('.dart')).toList();
+    final webFiles = sourceFiles.where((f) => f.endsWith('.html') || f.endsWith('.js') || f.endsWith('.ts')).toList();
+    final godotFiles = sourceFiles.where((f) => f.endsWith('.gd') || f.endsWith('.tscn')).toList();
+    
+    if (pythonFiles.isNotEmpty) {
+      buffer.writeln('- ✅ Python code files present (${pythonFiles.length} files)');
+      if (pythonFiles.length <= 10) {
+        buffer.writeln('  - ${pythonFiles.take(5).join(', ')}${pythonFiles.length > 5 ? '...' : ''}');
+      }
+    } else if (dartFiles.isNotEmpty) {
       buffer.writeln('- ✅ Dart/Flutter code files present (${dartFiles.length} files)');
       if (dartFiles.length <= 10) {
         buffer.writeln('  - ${dartFiles.take(5).join(', ')}${dartFiles.length > 5 ? '...' : ''}');
       }
+    } else if (webFiles.isNotEmpty) {
+      buffer.writeln('- ✅ Web code files present (${webFiles.length} files)');
+      if (webFiles.length <= 10) {
+        buffer.writeln('  - ${webFiles.take(5).join(', ')}${webFiles.length > 5 ? '...' : ''}');
+      }
+    } else if (godotFiles.isNotEmpty) {
+      buffer.writeln('- ✅ Godot code files present (${godotFiles.length} files)');
+      if (godotFiles.length <= 10) {
+        buffer.writeln('  - ${godotFiles.take(5).join(', ')}${godotFiles.length > 5 ? '...' : ''}');
+      }
     }
+    
     if (testFiles.isNotEmpty) buffer.writeln('- ✅ Test files included (${testFiles.length} files)');
     if (assetFiles.isNotEmpty) buffer.writeln('- ✅ Asset files organized (${assetFiles.length} files)');
     if (configFiles.isNotEmpty) buffer.writeln('- ✅ Configuration files present (${configFiles.length} files)');
@@ -575,12 +800,26 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
 
   /// Structured analysis for medium projects
   void _addStructuredCodeAnalysis(StringBuffer buffer, List<String> sourceFiles) {
-    final dartFiles = sourceFiles.where((f) => f.endsWith('.dart')).length;
     final testFiles = sourceFiles.where((f) => f.contains('test')).length;
     final assetFiles = sourceFiles.where((f) => f.contains('assets')).length;
     final configFiles = sourceFiles.where((f) => f.endsWith('.yaml') || f.endsWith('.json') || f.endsWith('.toml')).length;
     
-    buffer.writeln('- ✅ Dart/Flutter code files present ($dartFiles files)');
+    // Detect file types dynamically
+    final pythonFiles = sourceFiles.where((f) => f.endsWith('.py')).length;
+    final dartFiles = sourceFiles.where((f) => f.endsWith('.dart')).length;
+    final webFiles = sourceFiles.where((f) => f.endsWith('.html') || f.endsWith('.js') || f.endsWith('.ts')).length;
+    final godotFiles = sourceFiles.where((f) => f.endsWith('.gd') || f.endsWith('.tscn')).length;
+    
+    if (pythonFiles > 0) {
+      buffer.writeln('- ✅ Python code files present ($pythonFiles files)');
+    } else if (dartFiles > 0) {
+      buffer.writeln('- ✅ Dart/Flutter code files present ($dartFiles files)');
+    } else if (webFiles > 0) {
+      buffer.writeln('- ✅ Web code files present ($webFiles files)');
+    } else if (godotFiles > 0) {
+      buffer.writeln('- ✅ Godot code files present ($godotFiles files)');
+    }
+    
     if (testFiles > 0) buffer.writeln('- ✅ Test files included ($testFiles files)');
     if (assetFiles > 0) buffer.writeln('- ✅ Asset files organized ($assetFiles files)');
     if (configFiles > 0) buffer.writeln('- ✅ Configuration files present ($configFiles files)');
@@ -594,12 +833,26 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
 
   /// High-level analysis for large projects
   void _addHighLevelCodeAnalysis(StringBuffer buffer, List<String> sourceFiles) {
-    final dartFiles = sourceFiles.where((f) => f.endsWith('.dart')).length;
     final testFiles = sourceFiles.where((f) => f.contains('test')).length;
     final assetFiles = sourceFiles.where((f) => f.contains('assets')).length;
     final configFiles = sourceFiles.where((f) => f.endsWith('.yaml') || f.endsWith('.json') || f.endsWith('.toml')).length;
     
-    buffer.writeln('- ✅ Dart/Flutter code files present ($dartFiles files)');
+    // Detect file types dynamically
+    final pythonFiles = sourceFiles.where((f) => f.endsWith('.py')).length;
+    final dartFiles = sourceFiles.where((f) => f.endsWith('.dart')).length;
+    final webFiles = sourceFiles.where((f) => f.endsWith('.html') || f.endsWith('.js') || f.endsWith('.ts')).length;
+    final godotFiles = sourceFiles.where((f) => f.endsWith('.gd') || f.endsWith('.tscn')).length;
+    
+    if (pythonFiles > 0) {
+      buffer.writeln('- ✅ Python code files present ($pythonFiles files)');
+    } else if (dartFiles > 0) {
+      buffer.writeln('- ✅ Dart/Flutter code files present ($dartFiles files)');
+    } else if (webFiles > 0) {
+      buffer.writeln('- ✅ Web code files present ($webFiles files)');
+    } else if (godotFiles > 0) {
+      buffer.writeln('- ✅ Godot code files present ($godotFiles files)');
+    }
+    
     if (testFiles > 0) buffer.writeln('- ✅ Test files included ($testFiles files)');
     if (assetFiles > 0) buffer.writeln('- ✅ Asset files organized ($assetFiles files)');
     if (configFiles > 0) buffer.writeln('- ✅ Configuration files present ($configFiles files)');
@@ -642,50 +895,216 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
     final mediumPriority = <String>[];
     final lowPriority = <String>[];
     
-    // High Priority - Critical for project functionality
+    // Detect project type first
+    final projectType = _detectProjectType(sourceFiles, pubspecContent, dependencies);
+    
+    // High Priority - Critical for project functionality (Project-specific)
     if (readmeContent == null || readmeContent.isEmpty) {
       highPriority.add('📝 Create comprehensive README.md with project setup instructions');
     }
-    if (dependencies == null || dependencies.isEmpty) {
-      highPriority.add('📦 Configure project dependencies in pubspec.yaml/package.json');
-    }
-    if (sourceFiles == null || sourceFiles.isEmpty) {
-      highPriority.add('🏗️ Set up initial project structure and core files');
-    } else {
-      final testFiles = sourceFiles.where((f) => f.contains('test')).length;
-      if (testFiles == 0) {
-        highPriority.add('🧪 Add unit tests for core functionality (stability requirement)');
-      }
-      
-      final hasMain = sourceFiles.any((f) => f.contains('main'));
-      if (!hasMain) {
-        highPriority.add('🚀 Create main.dart/main.py entry point (required for execution)');
-      }
+    
+    // Project-specific high priority tasks - NO GENERIC FALLBACKS
+    switch (projectType) {
+      case 'flutter':
+        if (sourceFiles != null && !sourceFiles.any((f) => f.contains('main.dart'))) {
+          highPriority.add('🚀 Create main.dart entry point for Flutter application');
+        }
+        if (dependencies == null || dependencies.isEmpty) {
+          highPriority.add('📦 Configure Flutter dependencies in pubspec.yaml');
+        }
+        if (sourceFiles != null && sourceFiles.where((f) => f.contains('test')).isEmpty) {
+          highPriority.add('🧪 Add Flutter unit tests for core functionality');
+        }
+        break;
+        
+      case 'godot':
+        if (sourceFiles != null && !sourceFiles.any((f) => f.contains('project.godot'))) {
+          highPriority.add('🎮 Create project.godot configuration file for Godot game');
+        }
+        if (sourceFiles != null && !sourceFiles.any((f) => f.contains('scenes'))) {
+          highPriority.add('🎬 Set up scenes/ directory for game scenes and UI');
+        }
+        if (sourceFiles != null && !sourceFiles.any((f) => f.contains('scripts'))) {
+          highPriority.add('📜 Create scripts/ directory for game logic and mechanics');
+        }
+        break;
+        
+      case 'python':
+        if (sourceFiles != null && !sourceFiles.any((f) => f.contains('main.py'))) {
+          highPriority.add('🐍 Create main.py entry point for Python application');
+        }
+        if (dependencies == null || dependencies.isEmpty) {
+          highPriority.add('📦 Configure Python dependencies in requirements.txt or pyproject.toml');
+        }
+        if (sourceFiles != null && sourceFiles.where((f) => f.contains('test')).isEmpty) {
+          highPriority.add('🧪 Add Python unit tests for core functionality');
+        }
+        break;
+        
+      case 'web':
+        if (sourceFiles != null && !sourceFiles.any((f) => f.contains('index.html'))) {
+          highPriority.add('🌐 Create index.html entry point for web application');
+        }
+        if (dependencies == null || dependencies.isEmpty) {
+          highPriority.add('📦 Configure web dependencies in package.json');
+        }
+        break;
+        
+      case 'unknown':
+        // Only add generic tasks if we truly can't determine project type
+        if (sourceFiles == null || sourceFiles.isEmpty) {
+          highPriority.add('🏗️ Set up initial project structure and core files');
+        }
+        break;
     }
     
-    // Medium Priority - Important for project quality
+    // Medium Priority - Important for project quality (Project-specific)
     if (sourceFiles != null && sourceFiles.isNotEmpty) {
-      final hasAssets = sourceFiles.any((f) => f.contains('assets'));
-      if (!hasAssets) {
-        mediumPriority.add('🎨 Create assets/ directory for images, fonts, and media files');
-      }
-      
-      final hasConfig = sourceFiles.any((f) => f.endsWith('.yaml') || f.endsWith('.json'));
-      if (!hasConfig) {
-        mediumPriority.add('⚙️ Add configuration files for environment-specific settings');
+      switch (projectType) {
+        case 'flutter':
+          if (!sourceFiles.any((f) => f.contains('assets'))) {
+            mediumPriority.add('🎨 Create assets/ directory for Flutter images, fonts, and media');
+          }
+          if (!sourceFiles.any((f) => f.contains('lib/src'))) {
+            mediumPriority.add('🏗️ Organize source code in lib/src/ directory structure');
+          }
+          if (!sourceFiles.any((f) => f.contains('analysis_options.yaml'))) {
+            mediumPriority.add('⚙️ Add analysis_options.yaml for Flutter linting and analysis');
+          }
+          break;
+          
+        case 'godot':
+          if (!sourceFiles.any((f) => f.contains('assets'))) {
+            mediumPriority.add('🎨 Create assets/ directory for game sprites, sounds, and textures');
+          }
+          if (!sourceFiles.any((f) => f.contains('export'))) {
+            mediumPriority.add('📱 Set up export/ directory for platform-specific builds');
+          }
+          break;
+          
+        case 'python':
+          if (!sourceFiles.any((f) => f.contains('tests'))) {
+            mediumPriority.add('🧪 Create tests/ directory for Python unit tests');
+          }
+          if (!sourceFiles.any((f) => f.contains('src'))) {
+            mediumPriority.add('🏗️ Organize source code in src/ directory structure');
+          }
+          if (!sourceFiles.any((f) => f.contains('requirements.txt') || f.contains('pyproject.toml'))) {
+            mediumPriority.add('📦 Set up Python dependency management');
+          }
+          break;
+          
+        case 'web':
+          if (!sourceFiles.any((f) => f.contains('assets'))) {
+            mediumPriority.add('🎨 Create assets/ directory for images, fonts, and media');
+          }
+          if (!sourceFiles.any((f) => f.contains('src'))) {
+            mediumPriority.add('🏗️ Organize source code in src/ directory structure');
+          }
+          break;
+          
+        case 'unknown':
+          // Only add generic tasks if we truly can't determine project type
+          if (!sourceFiles.any((f) => f.contains('assets'))) {
+            mediumPriority.add('🎨 Create assets/ directory for images, fonts, and media files');
+          }
+          break;
       }
     }
     
-    // Low Priority - Nice to have improvements
-    lowPriority.add('📚 Add inline code documentation and API comments');
-    lowPriority.add('🔧 Set up automated build and deployment pipeline');
-    lowPriority.add('📊 Add performance monitoring and analytics');
+    // Low Priority - Nice to have improvements (Project-specific)
+    switch (projectType) {
+      case 'flutter':
+        lowPriority.add('📱 Add Flutter-specific platform configurations (iOS, Android, Web)');
+        lowPriority.add('🎨 Implement Material Design 3 or Cupertino design system');
+        lowPriority.add('🔧 Set up Flutter build and deployment pipeline');
+        lowPriority.add('📊 Add Flutter performance monitoring and analytics');
+        break;
+        
+      case 'godot':
+        lowPriority.add('🎮 Add Godot-specific game features (save system, settings, etc.)');
+        lowPriority.add('📱 Configure mobile platform export settings');
+        lowPriority.add('🔧 Set up Godot build and deployment pipeline');
+        lowPriority.add('📊 Add game analytics and crash reporting');
+        break;
+        
+      case 'python':
+        lowPriority.add('🐍 Add Python-specific tooling (black, flake8, mypy)');
+        lowPriority.add('📦 Set up Python packaging and distribution');
+        lowPriority.add('🔧 Configure Python CI/CD pipeline');
+        lowPriority.add('📊 Add Python performance monitoring and logging');
+        break;
+        
+      case 'web':
+        lowPriority.add('🌐 Add web-specific tooling (ESLint, Prettier, webpack)');
+        lowPriority.add('📱 Optimize for mobile and responsive design');
+        lowPriority.add('🔧 Set up web build and deployment pipeline');
+        lowPriority.add('📊 Add web performance monitoring and analytics');
+        break;
+        
+      case 'unknown':
+        // Only add generic tasks if we truly can't determine project type
+        lowPriority.add('📚 Add inline code documentation and API comments');
+        lowPriority.add('🔧 Set up automated build and deployment pipeline');
+        lowPriority.add('📊 Add performance monitoring and analytics');
+        break;
+    }
     
     return _PrioritizedTasks(
       highPriority: highPriority,
       mediumPriority: mediumPriority,
       lowPriority: lowPriority,
     );
+  }
+
+  /// Detect project type based on files and configuration
+  String _detectProjectType(List<String>? sourceFiles, String? pubspecContent, Map<String, dynamic>? dependencies) {
+    if (sourceFiles == null) return 'unknown';
+    
+    // Check for Flutter project (highest priority - most specific)
+    if (sourceFiles.any((f) => f.contains('pubspec.yaml')) || 
+        sourceFiles.any((f) => f.contains('main.dart')) ||
+        (sourceFiles.any((f) => f.contains('.dart')) && sourceFiles.any((f) => f.contains('lib/')))) {
+      return 'flutter';
+    }
+    
+    // Check for Godot project
+    if (sourceFiles.any((f) => f.contains('project.godot')) ||
+        sourceFiles.any((f) => f.contains('.gd')) ||
+        sourceFiles.any((f) => f.contains('.tscn'))) {
+      return 'godot';
+    }
+    
+    // Check for Python project
+    if (sourceFiles.any((f) => f.contains('.py')) ||
+        sourceFiles.any((f) => f.contains('requirements.txt')) ||
+        sourceFiles.any((f) => f.contains('pyproject.toml')) ||
+        sourceFiles.any((f) => f.contains('setup.py'))) {
+      return 'python';
+    }
+    
+    // Check for web project
+    if (sourceFiles.any((f) => f.contains('.html')) ||
+        sourceFiles.any((f) => f.contains('.js')) ||
+        sourceFiles.any((f) => f.contains('.ts')) ||
+        sourceFiles.any((f) => f.contains('package.json')) ||
+        sourceFiles.any((f) => f.contains('webpack.config'))) {
+      return 'web';
+    }
+    
+    // Check for mixed frameworks (e.g., Flutter + Python backend)
+    final hasFlutter = sourceFiles.any((f) => f.contains('.dart') || f.contains('pubspec.yaml'));
+    final hasPython = sourceFiles.any((f) => f.contains('.py') || f.contains('requirements.txt'));
+    final hasWeb = sourceFiles.any((f) => f.contains('.html') || f.contains('.js'));
+    
+    if (hasFlutter && hasPython) {
+      return 'flutter'; // Prioritize Flutter for mixed Flutter+Python projects
+    }
+    if (hasWeb && hasPython) {
+      return 'web'; // Prioritize web for mixed web+Python projects
+    }
+    
+    return 'unknown';
   }
 
   /// Add progress metrics by category
@@ -888,6 +1307,192 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
 - Continuous improvement
 
 *Generated by ONNX AI (Gemma 3 270M)*''';
+  }
+
+  /// Post-process generated content to ensure quality and consistency
+  String _postProcessGeneratedContent(String content, String projectType) {
+    LoggingService.info('ONNX AI: Post-processing content for project type: $projectType');
+    
+    // Remove any duplicate tasks that might have been generated
+    final lines = content.split('\n');
+    final seenTasks = <String>{};
+    final cleanedLines = <String>[];
+    
+    for (final line in lines) {
+      if (line.trim().startsWith('- ')) {
+        // This is a task line
+        final taskContent = line.trim().substring(2); // Remove "- " prefix
+        
+        // Check if we've seen this task before (case-insensitive)
+        final normalizedTask = taskContent.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '');
+        
+        if (!seenTasks.contains(normalizedTask)) {
+          seenTasks.add(normalizedTask);
+          cleanedLines.add(line);
+        } else {
+          LoggingService.info('ONNX AI: Removed duplicate task: $taskContent');
+        }
+        // Skip duplicate tasks
+      } else {
+        // This is not a task line, keep it
+        cleanedLines.add(line);
+      }
+    }
+    
+    LoggingService.info('ONNX AI: Removed ${lines.length - cleanedLines.length} duplicate tasks');
+    
+    // Ensure framework-specific content
+    String processedContent = cleanedLines.join('\n');
+    
+    // Replace any generic framework references with project-specific ones
+    switch (projectType) {
+      case 'flutter':
+        processedContent = processedContent.replaceAll('pubspec.yaml/package.json', 'pubspec.yaml');
+        processedContent = processedContent.replaceAll('main.dart/main.py', 'main.dart');
+        processedContent = processedContent.replaceAll('requirements.txt', 'pubspec.yaml');
+        processedContent = processedContent.replaceAll('pyproject.toml', 'pubspec.yaml');
+        processedContent = processedContent.replaceAll('package.json', 'pubspec.yaml');
+        break;
+        
+      case 'python':
+        processedContent = processedContent.replaceAll('pubspec.yaml/package.json', 'requirements.txt or pyproject.toml');
+        processedContent = processedContent.replaceAll('main.dart/main.py', 'main.py');
+        processedContent = processedContent.replaceAll('pubspec.yaml', 'requirements.txt or pyproject.toml');
+        processedContent = processedContent.replaceAll('package.json', 'requirements.txt or pyproject.toml');
+        break;
+        
+      case 'web':
+        processedContent = processedContent.replaceAll('pubspec.yaml/package.json', 'package.json');
+        processedContent = processedContent.replaceAll('main.dart/main.py', 'index.html');
+        processedContent = processedContent.replaceAll('requirements.txt', 'package.json');
+        processedContent = processedContent.replaceAll('pyproject.toml', 'package.json');
+        processedContent = processedContent.replaceAll('pubspec.yaml', 'package.json');
+        break;
+        
+      case 'godot':
+        processedContent = processedContent.replaceAll('pubspec.yaml/package.json', 'project.godot');
+        processedContent = processedContent.replaceAll('main.dart/main.py', 'main scene');
+        processedContent = processedContent.replaceAll('requirements.txt', 'project.godot');
+        processedContent = processedContent.replaceAll('pyproject.toml', 'project.godot');
+        processedContent = processedContent.replaceAll('package.json', 'project.godot');
+        break;
+    }
+    
+    // Additional validation: ensure no mixed framework references remain
+    final forbiddenPatterns = [
+      'pubspec.yaml/package.json',
+      'main.dart/main.py',
+      'requirements.txt/package.json',
+      'Flutter/Python',
+      'Flutter/Web',
+      'Python/Web',
+    ];
+    
+    for (final pattern in forbiddenPatterns) {
+      if (processedContent.contains(pattern)) {
+        LoggingService.info('ONNX AI: Replacing forbidden pattern: $pattern');
+        // Replace with appropriate framework-specific content
+        switch (projectType) {
+          case 'flutter':
+            processedContent = processedContent.replaceAll(pattern, 'Flutter');
+            break;
+          case 'python':
+            processedContent = processedContent.replaceAll(pattern, 'Python');
+            break;
+          case 'web':
+            processedContent = processedContent.replaceAll(pattern, 'Web');
+            break;
+          case 'godot':
+            processedContent = processedContent.replaceAll(pattern, 'Godot');
+            break;
+        }
+      }
+    }
+    
+    LoggingService.info('ONNX AI: Post-processing complete for $projectType project');
+    return processedContent;
+  }
+  
+  /// Validate generated content structure and quality
+  String _validateAndCleanContent(String content, String projectType) {
+    // Ensure proper section structure
+    final sections = ['## Current Progress', '## Next Steps', '## Roadmap'];
+    final lines = content.split('\n');
+    final validatedLines = <String>[];
+    
+    bool inProgressSection = false;
+    bool inNextStepsSection = false;
+    bool inRoadmapSection = false;
+    bool hasProgressTasks = false;
+    bool hasNextStepsTasks = false;
+    bool hasRoadmapTasks = false;
+    
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      
+      // Check section headers
+      if (line.trim() == '## Current Progress') {
+        inProgressSection = true;
+        inNextStepsSection = false;
+        inRoadmapSection = false;
+        validatedLines.add(line);
+        continue;
+      } else if (line.trim() == '## Next Steps') {
+        inProgressSection = false;
+        inNextStepsSection = true;
+        inRoadmapSection = false;
+        validatedLines.add(line);
+        continue;
+      } else if (line.trim() == '## Roadmap') {
+        inProgressSection = false;
+        inNextStepsSection = false;
+        inRoadmapSection = true;
+        validatedLines.add(line);
+        continue;
+      }
+      
+      // Track tasks in each section
+      if (line.trim().startsWith('- ')) {
+        if (inProgressSection) hasProgressTasks = true;
+        if (inNextStepsSection) hasNextStepsTasks = true;
+        if (inRoadmapSection) hasRoadmapTasks = true;
+      }
+      
+      validatedLines.add(line);
+    }
+    
+    // If any section is empty, add a placeholder
+    if (!hasProgressTasks) {
+      // Find the Current Progress section and add a placeholder
+      for (int i = 0; i < validatedLines.length; i++) {
+        if (validatedLines[i].trim() == '## Current Progress') {
+          validatedLines.insert(i + 1, '- 📋 Project structure analyzed');
+          break;
+        }
+      }
+    }
+    
+    if (!hasNextStepsTasks) {
+      // Find the Next Steps section and add a placeholder
+      for (int i = 0; i < validatedLines.length; i++) {
+        if (validatedLines[i].trim() == '## Next Steps') {
+          validatedLines.insert(i + 1, '- 🔍 Analyze project requirements');
+          break;
+        }
+      }
+    }
+    
+    if (!hasRoadmapTasks) {
+      // Find the Roadmap section and add a placeholder
+      for (int i = 0; i < validatedLines.length; i++) {
+        if (validatedLines[i].trim() == '## Roadmap') {
+          validatedLines.insert(i + 1, '- 🎯 Define project milestones');
+          break;
+        }
+      }
+    }
+    
+    return validatedLines.join('\n');
   }
 
   List<int> _simpleTokenize(String text) {

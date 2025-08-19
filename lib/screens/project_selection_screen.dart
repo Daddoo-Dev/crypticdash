@@ -235,26 +235,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                         ),
                       ],
                       const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // Debug: Manually trigger project refresh
-                          final projectService = Provider.of<ProjectService>(context, listen: false);
-                          projectService.notifyListeners();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Debug: Manually refreshing projects'),
-                              backgroundColor: AppThemes.warningOrange,
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.bug_report),
-                        label: const Text('Debug Refresh'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppThemes.warningOrange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                      ),
                     ],
                   ),
                 ],

@@ -105,7 +105,6 @@ flutter:
   assets:
     - assets/icons/
     - assets/images/
-    - assets/ai_models/mistral/
     - assets/ai_models/gemma_3_270m_it/
     - assets/yeti_animation/
     - TODO_TEMPLATE.md

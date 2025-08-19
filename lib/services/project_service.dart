@@ -216,7 +216,7 @@ class ProjectService extends ChangeNotifier {
         return project;
       } else {
         return Project(
-          id: repo.fullName,
+          id: repo.id.toString(),
           name: repo.name,
           owner: authenticatedUsername ?? repo.owner, // Use authenticated user as owner
           description: repo.description,
@@ -284,7 +284,7 @@ class ProjectService extends ChangeNotifier {
     debugPrint('Falling back to standard to-do parsing for ${repo.name}');
 
     return Project(
-      id: repo.fullName,
+      id: repo.id.toString(),
       name: repo.name,
       owner: owner,
       description: repo.description,

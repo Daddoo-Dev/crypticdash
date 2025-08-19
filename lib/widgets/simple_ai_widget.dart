@@ -11,7 +11,7 @@ import 'yeti_loading_widget.dart';
 
 class SimpleAIWidget extends StatefulWidget {
   final Project project;
-
+  
   const SimpleAIWidget({
     super.key,
     required this.project,
@@ -33,29 +33,29 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
           margin: const EdgeInsets.all(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-                         child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 Row(
-                   children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                      Icon(
                        aiService.enabled ? Icons.ac_unit : Icons.ac_unit_outlined,
                        color: aiService.enabled ? Colors.blue : Colors.grey,
                        size: 24,
                      ),
-                     const SizedBox(width: 8),
-                     const Text(
+                    const SizedBox(width: 8),
+                    const Text(
                        'Yeti Assistant',
-                       style: TextStyle(
-                         fontSize: 18,
-                         fontWeight: FontWeight.bold,
-                       ),
-                     ),
-                     const Spacer(),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
                      _buildStatusBadge(aiService),
-                   ],
-                 ),
-                 const SizedBox(height: 16),
+                  ],
+                ),
+                const SizedBox(height: 16),
                  if (_isAnalyzing) ...[
                    // Show centered Yeti animation during processing
                                        Container(
@@ -72,11 +72,11 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
                             mainAxisSize: MainAxisSize.min, // Prevent expansion
                             children: [
                               const YetiLoadingWidget(message: 'Yeti is analyzing your repository...'),
-                              const SizedBox(height: 16),
+                const SizedBox(height: 16),
                               const CircularProgressIndicator(
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                               ),
-                              const SizedBox(height: 16),
+                                 const SizedBox(height: 16),
                               Text(
                                 'This may take a few moments...',
                                 style: TextStyle(
@@ -86,32 +86,32 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ),
+                           ),
+                         ),
+                       ),
                  ] else ...[
                    // Show the button when not analyzing
                    Tooltip(
                      message: 'Analyze repository and generate TODO.md file',
                      child: SizedBox(
                        width: double.infinity,
-                       child: ElevatedButton.icon(
+                         child: ElevatedButton.icon(
                          onPressed: !aiService.modelLoaded
                              ? null
                              : () => _generateTODOMD(context, aiService),
                          icon: const Icon(Icons.task_alt),
                          label: const Text('Analyze & Generate TODO'),
-                         style: ElevatedButton.styleFrom(
+                           style: ElevatedButton.styleFrom(
                            backgroundColor: Colors.blue,
-                           foregroundColor: Colors.white,
+                             foregroundColor: Colors.white,
                            padding: const EdgeInsets.symmetric(vertical: 16),
                          ),
                        ),
                      ),
                    ),
                  ],
-               ],
-             ),
+              ],
+            ),
           ),
         );
       },
@@ -152,9 +152,9 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
           const SizedBox(width: 4),
           Text(
             statusText,
-            style: TextStyle(
+              style: TextStyle(
               color: badgeColor,
-              fontSize: 12,
+                fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -173,9 +173,9 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
     try {
       // Add error boundary for setState
       if (mounted) {
-        setState(() {
-          _isAnalyzing = true;
-        });
+      setState(() {
+        _isAnalyzing = true;
+      });
       }
       
       // Check if {reponame}-TODO.md already exists
@@ -207,13 +207,13 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
       );
       
              if (currentContext.mounted) {
-         setState(() {
-           _isAnalyzing = false;
-         });
+        setState(() {
+          _isAnalyzing = false;
+        });
          
          // Show preview dialog with save/cancel options
          _showPreviewDialog(context, todoContent, todoFileName, existingTodo != null);
-       }
+      }
     } catch (e) {
       if (currentContext.mounted) {
         setState(() {
@@ -322,8 +322,8 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
           widget.project.repoName, 
           'README.md'
         );
-        content['readme'] = readme;
-      } catch (e) {
+          content['readme'] = readme;
+              } catch (e) {
         content['readme'] = null;
       }
       
@@ -403,7 +403,7 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
           deps[name] = version;
         }
       }
-      }
+    }
     
     return deps;
   }
