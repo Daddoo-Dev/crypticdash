@@ -8,6 +8,7 @@ import '../services/project_selection_service.dart';
 
 import '../services/settings_service.dart';
 import '../theme/app_themes.dart';
+import '../screens/help_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -34,6 +35,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: _showHelp,
+            tooltip: 'Help & Support',
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: () => _saveSettings(settingsService),
@@ -1062,60 +1068,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showHelp() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
-        content: const SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Getting Started',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('• Connect your GitHub account using OAuth or Personal Access Token'),
-              Text('• Select repositories to monitor from your GitHub account'),
-              Text('• View project progress and manage to-do lists'),
-              SizedBox(height: 16),
-              
-              Text(
-                'Managing Projects',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('• Click on project cards to view detailed information'),
-              Text('• Toggle to-do completion status to update progress'),
-              Text('• Use filters to view specific project states'),
-              SizedBox(height: 16),
-              
-              Text(
-                'Settings & Customization',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('• Adjust auto-refresh intervals for project updates'),
-              Text('• Configure cache settings for offline access'),
-              Text('• Customize interface preferences'),
-              SizedBox(height: 16),
-              
-              Text(
-                'Need More Help?',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('For additional support, please visit our documentation or contact support.'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const HelpScreen(),
       ),
     );
   }
@@ -1248,6 +1203,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _formatDateTime(DateTime dateTime) {
     return DateFormat('MM/dd/yyyy HH:mm').format(dateTime);
   }
-
 
 }

@@ -12,6 +12,7 @@ import '../screens/auth_screen.dart'; // Added import for AuthScreen
 import '../services/project_selection_service.dart'; // Added import for ProjectSelectionService
 import '../screens/project_detail_screen.dart'; // Added import for ProjectDetailScreen
 import '../screens/settings_screen.dart'; // Added import for SettingsScreen
+import '../screens/help_screen.dart'; // Added import for HelpScreen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -172,6 +173,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 icon: const Icon(Icons.logout),
                 onPressed: () => _showLogoutDialog(context),
                 tooltip: 'Logout',
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline),
+                onPressed: () => _showHelp(context),
+                tooltip: 'Help & Support',
               ),
               IconButton(
                 icon: const Icon(Icons.settings),
@@ -342,6 +348,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onPressed: () => _showAddProjectDialog(context),
             backgroundColor: AppThemes.primaryBlue,
             foregroundColor: Colors.white,
+            tooltip: 'Add New Project',
             child: const Icon(Icons.add),
           ),
         );
@@ -506,5 +513,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     }
+  }
+
+  void _showHelp(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const HelpScreen(),
+      ),
+    );
   }
 }

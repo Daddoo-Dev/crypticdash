@@ -1,15 +1,14 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crypticdash/main.dart';
 
 void main() {
-  group('CrypticDash App', () {
+  setUpAll(() {
+    // Initialize Flutter bindings for testing
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
+
+  group('CrypticDash App Flow', () {
     testWidgets('app launches and shows auth screen', (WidgetTester tester) async {
       // Build our app and trigger a frame
       await tester.pumpWidget(const CrypticDashApp());
@@ -19,19 +18,16 @@ void main() {
 
       // Verify that our app shows the auth screen initially
       expect(find.text('Connect to GitHub'), findsOneWidget);
-      
-      // Check that the app has the basic structure
-      expect(find.byType(CrypticDashApp), findsOneWidget);
     });
 
-    testWidgets('app has proper structure', (WidgetTester tester) async {
+    testWidgets('app has proper navigation structure', (WidgetTester tester) async {
       await tester.pumpWidget(const CrypticDashApp());
       await tester.pumpAndSettle();
 
       // Check that the app has the basic structure
-      expect(find.byType(CrypticDashApp), findsOneWidget);
+      expect(find.byType(MaterialApp), findsOneWidget);
       
-      // Check that the main app widget exists and is visible
+      // Check that the main app widget exists
       expect(find.byType(CrypticDashApp), findsOneWidget);
     });
   });

@@ -18,6 +18,14 @@ A dynamic dashboard for managing multiple GitHub projects with integrated todo l
 - Dart SDK (3.0.0 or higher)
 - GitHub Personal Access Token
 
+### 📚 Documentation
+
+- **[User Guide](docs/USER_GUIDE.md)** - Complete guide to using CrypticDash
+- **[FAQ](docs/FAQ.md)** - Quick answers to common questions
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Solve problems and issues
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Technical documentation
+- **[Documentation Index](docs/README.md)** - All documentation in one place
+
 ### Installation
 
 1. Clone the repository:

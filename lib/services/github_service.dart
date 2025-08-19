@@ -93,6 +93,7 @@ class GitHubService extends ChangeNotifier {
 
     try {
       LoggingService.debug('GitHubService: Making HTTP request to $_baseUrl/user');
+      
       final response = await http.get(
         Uri.parse('$_baseUrl/user'),
         headers: {
