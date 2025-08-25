@@ -75,6 +75,9 @@ dependencies:
   # JSON Processing for Model Configs
   json_annotation: ^4.8.1
   onnxruntime: ^1.4.1
+  
+  # Appwrite Backend
+  appwrite: ^17.1.0
 
 dev_dependencies:
   flutter_test:
