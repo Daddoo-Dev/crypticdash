@@ -5,7 +5,7 @@ import '../services/github_service.dart';
 import '../services/project_selection_service.dart';
 import '../theme/app_themes.dart';
 import 'dashboard_screen.dart';
-import '../services/project_service.dart'; // Added import for ProjectService
+// Added import for ProjectService
 
 class ProjectSelectionScreen extends StatefulWidget {
   final bool isSetupMode;
@@ -214,7 +214,7 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                       ElevatedButton.icon(
                         onPressed: selectedCount > 0 ? _proceedToDashboard : null,
                         icon: const Icon(Icons.dashboard),
-                        label: Text('Proceed to Dashboard (${selectedCount})'),
+                        label: Text('Proceed to Dashboard ($selectedCount)'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppThemes.primaryBlue,
                           foregroundColor: Colors.white,

@@ -160,7 +160,7 @@ class ONNXAIService extends ChangeNotifier {
     }
   }
 
-  /// Intelligent TODO management - creates new or intelligently updates existing
+
   Future<String> manageRepositoryTodos(String repositoryPath, {
     String? existingTodoContent,
     String? readmeContent,
@@ -178,7 +178,7 @@ class ONNXAIService extends ChangeNotifier {
       notifyListeners();
 
       if (existingTodoContent == null || existingTodoContent.trim().isEmpty) {
-        // No existing TODO - create new one based on actual analysis
+
         _statusMessage = 'ONNX AI: Creating new TODO based on repository analysis...';
         notifyListeners();
         return await analyzeRepositoryAndGenerateTodos(
@@ -190,7 +190,7 @@ class ONNXAIService extends ChangeNotifier {
           dependencies: dependencies,
         );
       } else {
-        // Existing TODO found - intelligently update it
+
         _statusMessage = 'ONNX AI: Updating existing TODO...';
         notifyListeners();
         return await _updateExistingTodo(
@@ -219,7 +219,7 @@ class ONNXAIService extends ChangeNotifier {
     Map<String, dynamic>? dependencies,
   }) async {
     try {
-      // Parse existing TODO content
+      // Parse existing content
       final existingTodos = _parseExistingTodo(existingContent);
       
       // Generate new analysis based on actual repository content
@@ -1416,7 +1416,6 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
   /// Validate generated content structure and quality
   String _validateAndCleanContent(String content, String projectType) {
     // Ensure proper section structure
-    final sections = ['## Current Progress', '## Next Steps', '## Roadmap'];
     final lines = content.split('\n');
     final validatedLines = <String>[];
     

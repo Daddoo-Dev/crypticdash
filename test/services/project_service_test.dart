@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crypticdash/services/project_service.dart';
 import 'package:crypticdash/services/github_service.dart';
 import 'package:crypticdash/services/project_selection_service.dart';
-import 'package:crypticdash/models/github_repository.dart';
 import 'package:crypticdash/models/project.dart';
 
 void main() {
@@ -50,12 +49,6 @@ void main() {
 // Simple mock classes for testing that don't access Flutter bindings
 class MockGitHubService extends GitHubService {
   MockGitHubService() : super();
-  
-  @override
-  Future<void> _loadStoredToken() async {
-    // Override to avoid accessing SharedPreferences in tests
-    // Don't call super to avoid SharedPreferences access
-  }
 }
 
 class MockProjectSelectionService extends ProjectSelectionService {

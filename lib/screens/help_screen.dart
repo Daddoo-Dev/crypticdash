@@ -232,7 +232,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '🚀 Getting Started',
-        children: [
+        children: const [
           HelpSection(
             title: 'First Time Setup',
             children: [
@@ -271,7 +271,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '📁 Project Management',
-        children: [
+        children: const [
           HelpSection(
             title: 'Adding Projects',
             children: [
@@ -327,7 +327,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '✅ TODO Management',
-        children: [
+        children: const [
           HelpSection(
             title: 'Creating TODOs',
             children: [
@@ -387,7 +387,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '🤖 AI Features',
-        children: [
+        children: const [
           HelpSection(
             title: 'Enabling AI',
             children: [
@@ -439,7 +439,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '🔐 Authentication Help',
-        children: [
+        children: const [
           HelpSection(
             title: 'OAuth Issues',
             children: [
@@ -495,7 +495,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '🔄 Sync Issues',
-        children: [
+        children: const [
           HelpSection(
             title: 'TODOs Not Saving',
             children: [
@@ -551,7 +551,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '⚡ Performance Issues',
-        children: [
+        children: const [
           HelpSection(
             title: 'Slow App Response',
             children: [
@@ -607,7 +607,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '📖 User Guide',
-        children: [
+        children: const [
           HelpSection(
             title: 'Complete Documentation',
             children: [
@@ -642,7 +642,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '🔧 Troubleshooting Guide',
-        children: [
+        children: const [
           HelpSection(
             title: 'Problem-Solving Resource',
             children: [
@@ -677,7 +677,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '❓ FAQ',
-        children: [
+        children: const [
           HelpSection(
             title: 'Frequently Asked Questions',
             children: [

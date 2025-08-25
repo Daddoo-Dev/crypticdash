@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'github_service.dart';
@@ -10,7 +9,7 @@ import 'iap_service.dart';
 class RepoTrackingService extends ChangeNotifier {
   static const String _reposKey = 'tracked_repositories';
   static const String _gistIdKey = 'repo_tracking_gist_id';
-  static const String _gistFileName = 'crypticdash_repos.json';
+
   
   final GitHubService _githubService;
   final IAPService _iapService;
@@ -64,16 +63,13 @@ class RepoTrackingService extends ChangeNotifier {
         return;
       }
       
-      // Create a GistService instance with the current token
-      final gistService = GistService(_githubService.accessToken!);
-      
       final gistData = {
         'repositories': _trackedRepos.toList(),
         'created_at': DateTime.now().toIso8601String(),
         'version': '1.0',
       };
       
-      final success = await gistService.createOrUpdatePreferencesGist(gistData);
+      final success = await GistService(_githubService.accessToken!).createOrUpdatePreferencesGist(gistData);
       if (success) {
         // Get the Gist ID by finding the created Gist
         final gistId = await _findTrackingGist();
@@ -93,10 +89,9 @@ class RepoTrackingService extends ChangeNotifier {
     try {
       if (_githubService.accessToken == null) return null;
       
-      final gistService = GistService(_githubService.accessToken!);
       // We'll need to extend GistService to support custom descriptions
       // For now, use a workaround by checking the existing GistService
-      return null; // TODO: Implement custom Gist finding
+      return null; // 
     } catch (e) {
       debugPrint('Error finding tracking Gist: $e');
       return null;
@@ -272,7 +267,7 @@ class RepoTrackingService extends ChangeNotifier {
       totalRepos: totalReposEverAdded,
       gistId: _gistId,
       isGistSynced: _gistId != null,
-      lastSync: DateTime.now(), // TODO: Track actual last sync time
+      lastSync: DateTime.now(), //
       subscriptionInfo: _iapService.getSubscriptionInfo(),
       limitInfo: getRepoLimitInfo(),
     );
@@ -310,7 +305,7 @@ class RepoLimitInfo {
     }
     
     if (isInTrial) {
-      return '$currentCount of 3 repositories (${trialDaysRemaining} trial days left)';
+      return '$currentCount of 3 repositories ($trialDaysRemaining trial days left)';
     }
     
     return '$currentCount of 1 repository';

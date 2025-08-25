@@ -97,7 +97,7 @@ class ProjectService extends ChangeNotifier {
         debugPrint('ProjectService: Loading project for repo: ${repo.name} (ID: ${repo.id})');
         
         // Check if project already exists to prevent duplicates
-        final existingProjectIndex = _projects.indexWhere((p) => p.id == repo.id);
+        final existingProjectIndex = _projects.indexWhere((p) => p.id == repo.id.toString());
         if (existingProjectIndex != -1) {
           debugPrint('ProjectService: Project ${repo.name} already exists, updating instead of adding');
           // Update existing project
@@ -130,7 +130,7 @@ class ProjectService extends ChangeNotifier {
       // Find the project in the list
       final index = _projects.indexWhere((p) => p.id == project.id);
       if (index != -1) {
-        // Fetch the updated TODO content directly
+        // Fetch the updated content directly
         final todoContent = await _fetchTodoFromGitHubDirect(project.owner, project.repoName);
         
         if (todoContent != null) {
@@ -151,7 +151,7 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  /// Fetch TODO content directly without creating a full GitHubRepository object
+  /// Fetch content directly without creating a full GitHubRepository object
   Future<String?> _fetchTodoFromGitHubDirect(String owner, String repoName) async {
     try {
       // Try to fetch {reponame}-TODO.md from the repository first (correct format)
@@ -180,7 +180,7 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  /// Parse project content from TODO content string
+  /// Parse project content from content string
   Project? _parseProjectContentFromContent(Project existingProject, String todoContent, String owner) {
     try {
       final enhancedProject = MarkdownService.parseEnhancedTodoMarkdown(todoContent, owner, existingProject.repoName);
@@ -376,6 +376,11 @@ class ProjectService extends ChangeNotifier {
       debugPrint('Error removing project: $e');
       rethrow;
     }
+  }
+  
+  /// Refresh projects list and notify listeners
+  void refreshProjects() {
+    notifyListeners();
   }
 }
 

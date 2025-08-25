@@ -42,7 +42,7 @@ class ProjectSelectionService extends ChangeNotifier {
   void setOnSelectionChangedCallback(VoidCallback callback) {
     debugPrint('ProjectSelectionService: setOnSelectionChangedCallback called');
     _onSelectionChanged = callback;
-    debugPrint('ProjectSelectionService: Callback set to: ${callback != null ? "valid callback" : "null"}');
+    debugPrint('ProjectSelectionService: Callback set to: valid callback');
   }
   
   /// Initialize Gist service for cross-device sync

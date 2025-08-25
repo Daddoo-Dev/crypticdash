@@ -68,11 +68,10 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
       final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
       await projectSelectionService.toggleProjectSelection(_selectedRepository!.id);
       
-      // Then refresh the projects
-      final projectService = Provider.of<ProjectService>(context, listen: false);
-      projectService.notifyListeners();
-      
       if (mounted) {
+        // Then refresh the projects
+        final projectService = Provider.of<ProjectService>(context, listen: false);
+        
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -80,6 +79,9 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
             backgroundColor: AppThemes.successGreen,
           ),
         );
+        
+        // Refresh projects after navigation to avoid BuildContext issues
+        projectService.refreshProjects();
       }
     } catch (e) {
       if (mounted) {

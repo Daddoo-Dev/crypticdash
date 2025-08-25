@@ -170,6 +170,9 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
     // Define todoFileName outside try block so it's accessible in the title
     final todoFileName = '${widget.project.repoName}-TODO.md';
     
+    // Get GitHubService before async operations to avoid BuildContext issues
+    final githubService = Provider.of<GitHubService>(currentContext, listen: false);
+    
     try {
       // Add error boundary for setState
       if (mounted) {
@@ -181,7 +184,6 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
       // Check if {reponame}-TODO.md already exists
       String? existingTodo = '';
       try {
-        final githubService = Provider.of<GitHubService>(currentContext, listen: false);
         existingTodo = await githubService.getFileContent(
           widget.project.owner, 
           widget.project.repoName, 
@@ -193,9 +195,9 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
       }
       
       // Gather actual repository content for AI analysis
-      final repositoryContent = await _gatherRepositoryContent(currentContext);
+      final repositoryContent = await _gatherRepositoryContent(githubService);
       
-      // Use intelligent TODO management with actual repository content
+      // Use intelligent task management with actual repository content
       final todoContent = await aiService.manageRepositoryTodos(
         widget.project.name,
         existingTodoContent: existingTodo,
@@ -206,13 +208,13 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
         dependencies: repositoryContent['dependencies'],
       );
       
-             if (currentContext.mounted) {
+      if (currentContext.mounted) {
         setState(() {
           _isAnalyzing = false;
         });
          
-         // Show preview dialog with save/cancel options
-         _showPreviewDialog(context, todoContent, todoFileName, existingTodo != null);
+        // Show preview dialog with save/cancel options
+        _showPreviewDialog(context, todoContent, todoFileName, existingTodo != null);
       }
     } catch (e) {
       if (currentContext.mounted) {
@@ -275,7 +277,7 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
             ),
           );
           
-          // Refresh the project data to show updated TODO content
+          // Refresh the project data to show updated content
           try {
             final projectService = Provider.of<ProjectService>(context, listen: false);
             await projectService.refreshProject(widget.project);
@@ -309,11 +311,10 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
 
 
   /// Gather actual repository content for AI analysis
-  Future<Map<String, dynamic>> _gatherRepositoryContent(BuildContext context) async {
+  Future<Map<String, dynamic>> _gatherRepositoryContent(GitHubService githubService) async {
     final content = <String, dynamic>{};
     
     try {
-      final githubService = Provider.of<GitHubService>(context, listen: false);
       
       // Read README.md
       try {

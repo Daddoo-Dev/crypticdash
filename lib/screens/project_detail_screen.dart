@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../models/project.dart';
 import '../services/github_service.dart';
 import '../services/markdown_service.dart';
-import '../services/user_identity_service.dart';
 import '../services/project_selection_service.dart';
 import '../services/project_service.dart';
 import '../theme/app_themes.dart';
@@ -564,11 +563,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       // Remove the project from selections
       await projectSelectionService.toggleProjectSelection(projectId);
       
-      // Also notify the ProjectService to refresh its list
-      final projectService = Provider.of<ProjectService>(context, listen: false);
-      projectService.notifyListeners();
-      
       if (mounted) {
+        // Also notify the ProjectService to refresh its list
+        final projectService = Provider.of<ProjectService>(context, listen: false);
+        
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -579,6 +577,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         
         // Navigate back to dashboard
         Navigator.of(context).pop();
+        
+        // Refresh projects after navigation to avoid BuildContext issues
+        projectService.refreshProjects();
       }
     } catch (e) {
       if (mounted) {

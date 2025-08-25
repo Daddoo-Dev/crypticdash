@@ -82,7 +82,7 @@ class MarkdownService {
         if (line.isEmpty) continue;
         
         // Check for headers
-        // Note: We don't override projectName from the TODO file content
+        // Note: We don't override projectName from the file content
         // The project should always display the actual repository name
         if (line.startsWith('## ') && line.contains('Overview')) {
           currentSection = 0;
@@ -167,7 +167,7 @@ class MarkdownService {
         debugPrint('Line $i: "$line" (currentSection: "$currentSection", inSubSection: $inSubSection)');
         
         // Check for headers
-        // Note: We don't override projectName from the TODO file content
+        // Note: We don't override projectName from the file content
         // The project should always display the actual repository name
         if (line.startsWith('## ')) {
           // Main section header
