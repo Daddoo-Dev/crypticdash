@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'iap_service.dart';
 
 /// Windows Store Service using Microsoft Store Services
@@ -86,20 +87,20 @@ class WindowsStoreService implements PlatformIAPService {
   }
 }
 
-/// macOS App Store Service using RevenueCat + StoreKit 2
+/// macOS App Store Service using RevenueCat
 class MacOSStoreService implements PlatformIAPService {
-  static const String _channelName = 'macos_store_service';
-  static const MethodChannel _channel = MethodChannel(_channelName);
   
   @override
   Future<bool> purchaseProduct(String productId) async {
     try {
       if (Platform.isMacOS) {
         // Use RevenueCat for macOS
-        final result = await _channel.invokeMethod('purchaseProduct', {
-          'productId': productId,
-        });
-        return result == true;
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
+          final package = offerings.current!.availablePackages.first;
+          final customerInfo = await Purchases.purchasePackage(package);
+          return customerInfo.entitlements.active.containsKey('premium');
+        }
       }
       return false;
     } catch (e) {
@@ -112,8 +113,8 @@ class MacOSStoreService implements PlatformIAPService {
   Future<bool> restorePurchases() async {
     try {
       if (Platform.isMacOS) {
-        final result = await _channel.invokeMethod('restorePurchases');
-        return result == true;
+        final customerInfo = await Purchases.restorePurchases();
+        return customerInfo.entitlements.active.containsKey('premium');
       }
       return false;
     } catch (e) {
@@ -126,10 +127,8 @@ class MacOSStoreService implements PlatformIAPService {
   Future<bool> hasActiveSubscription(String productId) async {
     try {
       if (Platform.isMacOS) {
-        final result = await _channel.invokeMethod('hasActiveSubscription', {
-          'productId': productId,
-        });
-        return result == true;
+        final customerInfo = await Purchases.getCustomerInfo();
+        return customerInfo.entitlements.active.containsKey('premium');
       }
       return false;
     } catch (e) {
@@ -142,17 +141,17 @@ class MacOSStoreService implements PlatformIAPService {
   Future<ProductDetails?> getProductDetails(String productId) async {
     try {
       if (Platform.isMacOS) {
-        final result = await _channel.invokeMethod('getProductDetails', {
-          'productId': productId,
-        });
-        
-        if (result != null) {
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
+          final package = offerings.current!.availablePackages.first;
+          final storeProduct = package.storeProduct;
+          
           return ProductDetails(
-            id: result['id'] ?? productId,
-            title: result['title'] ?? 'Premium Subscription',
-            description: result['description'] ?? 'Unlimited repositories with AI features',
-            price: result['price'] ?? '\$9.99',
-            currencyCode: result['currencyCode'] ?? 'USD',
+            id: storeProduct.identifier,
+            title: storeProduct.title,
+            description: storeProduct.description,
+            price: storeProduct.priceString,
+            currencyCode: storeProduct.currencyCode,
           );
         }
       }
@@ -165,24 +164,24 @@ class MacOSStoreService implements PlatformIAPService {
   
   @override
   void dispose() {
-    // Cleanup macOS Store resources if needed
+    // RevenueCat handles cleanup automatically
   }
 }
 
-/// iOS App Store Service using RevenueCat + StoreKit 2
+/// iOS App Store Service using RevenueCat
 class IOSStoreService implements PlatformIAPService {
-  static const String _channelName = 'ios_store_service';
-  static const MethodChannel _channel = MethodChannel(_channelName);
   
   @override
   Future<bool> purchaseProduct(String productId) async {
     try {
       if (Platform.isIOS) {
         // Use RevenueCat for iOS
-        final result = await _channel.invokeMethod('purchaseProduct', {
-          'productId': productId,
-        });
-        return result == true;
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
+          final package = offerings.current!.availablePackages.first;
+          final customerInfo = await Purchases.purchasePackage(package);
+          return customerInfo.entitlements.active.containsKey('premium');
+        }
       }
       return false;
     } catch (e) {
@@ -195,8 +194,8 @@ class IOSStoreService implements PlatformIAPService {
   Future<bool> restorePurchases() async {
     try {
       if (Platform.isIOS) {
-        final result = await _channel.invokeMethod('restorePurchases');
-        return result == true;
+        final customerInfo = await Purchases.restorePurchases();
+        return customerInfo.entitlements.active.containsKey('premium');
       }
       return false;
     } catch (e) {
@@ -209,10 +208,8 @@ class IOSStoreService implements PlatformIAPService {
   Future<bool> hasActiveSubscription(String productId) async {
     try {
       if (Platform.isIOS) {
-        final result = await _channel.invokeMethod('hasActiveSubscription', {
-          'productId': productId,
-        });
-        return result == true;
+        final customerInfo = await Purchases.getCustomerInfo();
+        return customerInfo.entitlements.active.containsKey('premium');
       }
       return false;
     } catch (e) {
@@ -225,17 +222,17 @@ class IOSStoreService implements PlatformIAPService {
   Future<ProductDetails?> getProductDetails(String productId) async {
     try {
       if (Platform.isIOS) {
-        final result = await _channel.invokeMethod('getProductDetails', {
-          'productId': productId,
-        });
-        
-        if (result != null) {
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
+          final package = offerings.current!.availablePackages.first;
+          final storeProduct = package.storeProduct;
+          
           return ProductDetails(
-            id: result['id'] ?? productId,
-            title: result['title'] ?? 'Premium Subscription',
-            description: result['description'] ?? 'Unlimited repositories with AI features',
-            price: result['price'] ?? '\$9.99',
-            currencyCode: result['currencyCode'] ?? 'USD',
+            id: storeProduct.identifier,
+            title: storeProduct.title,
+            description: storeProduct.description,
+            price: storeProduct.priceString,
+            currencyCode: storeProduct.currencyCode,
           );
         }
       }
@@ -248,24 +245,24 @@ class IOSStoreService implements PlatformIAPService {
   
   @override
   void dispose() {
-    // Cleanup iOS Store resources if needed
+    // RevenueCat handles cleanup automatically
   }
 }
 
 /// Android Google Play Store Service using RevenueCat
 class AndroidStoreService implements PlatformIAPService {
-  static const String _channelName = 'android_store_service';
-  static const MethodChannel _channel = MethodChannel(_channelName);
   
   @override
   Future<bool> purchaseProduct(String productId) async {
     try {
       if (Platform.isAndroid) {
         // Use RevenueCat for Android
-        final result = await _channel.invokeMethod('purchaseProduct', {
-          'productId': productId,
-        });
-        return result == true;
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
+          final package = offerings.current!.availablePackages.first;
+          final customerInfo = await Purchases.purchasePackage(package);
+          return customerInfo.entitlements.active.containsKey('premium');
+        }
       }
       return false;
     } catch (e) {
@@ -278,8 +275,8 @@ class AndroidStoreService implements PlatformIAPService {
   Future<bool> restorePurchases() async {
     try {
       if (Platform.isAndroid) {
-        final result = await _channel.invokeMethod('restorePurchases');
-        return result == true;
+        final customerInfo = await Purchases.restorePurchases();
+        return customerInfo.entitlements.active.containsKey('premium');
       }
       return false;
     } catch (e) {
@@ -292,10 +289,8 @@ class AndroidStoreService implements PlatformIAPService {
   Future<bool> hasActiveSubscription(String productId) async {
     try {
       if (Platform.isAndroid) {
-        final result = await _channel.invokeMethod('hasActiveSubscription', {
-          'productId': productId,
-        });
-        return result == true;
+        final customerInfo = await Purchases.getCustomerInfo();
+        return customerInfo.entitlements.active.containsKey('premium');
       }
       return false;
     } catch (e) {
@@ -308,17 +303,17 @@ class AndroidStoreService implements PlatformIAPService {
   Future<ProductDetails?> getProductDetails(String productId) async {
     try {
       if (Platform.isAndroid) {
-        final result = await _channel.invokeMethod('getProductDetails', {
-          'productId': productId,
-        });
-        
-        if (result != null) {
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
+          final package = offerings.current!.availablePackages.first;
+          final storeProduct = package.storeProduct;
+          
           return ProductDetails(
-            id: result['id'] ?? productId,
-            title: result['title'] ?? 'Premium Subscription',
-            description: result['description'] ?? 'Unlimited repositories with AI features',
-            price: result['price'] ?? '\$9.99',
-            currencyCode: result['currencyCode'] ?? 'USD',
+            id: storeProduct.identifier,
+            title: storeProduct.title,
+            description: storeProduct.description,
+            price: storeProduct.priceString,
+            currencyCode: storeProduct.currencyCode,
           );
         }
       }
@@ -331,7 +326,7 @@ class AndroidStoreService implements PlatformIAPService {
   
   @override
   void dispose() {
-    // Cleanup Android Store resources if needed
+    // RevenueCat handles cleanup automatically
   }
 }
 

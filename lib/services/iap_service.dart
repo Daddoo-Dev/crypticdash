@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:appwrite/appwrite.dart';
+import 'platform_iap_services.dart';
 
 
 /// Appwrite-based subscription service for CrypticDash
@@ -26,6 +27,9 @@ class IAPService extends ChangeNotifier {
   late final Databases _databases;
   late final Account _account;
   
+  // Platform-specific IAP services
+  late final PlatformIAPService _platformService;
+  
   // Getters
   SubscriptionStatus get subscriptionStatus => _subscriptionStatus;
   DateTime? get trialStartDate => _trialStartDate;
@@ -46,7 +50,27 @@ class IAPService extends ChangeNotifier {
     _databases = Databases(_client);
     _account = Account(_client);
     
+    _initializePlatformService();
     _initializeService();
+  }
+  
+  /// Initialize platform-specific IAP service
+  void _initializePlatformService() {
+    if (Platform.isWindows) {
+      _platformService = WindowsStoreService();
+    } else if (Platform.isMacOS) {
+      _platformService = MacOSStoreService();
+    } else if (Platform.isIOS) {
+      _platformService = IOSStoreService();
+    } else if (Platform.isAndroid) {
+      _platformService = AndroidStoreService();
+    } else {
+      _platformService = MockStoreService();
+    }
+    
+    // Initialize in_app_purchase for supported platforms
+    // Note: Currently using platform-specific services instead of in_app_purchase
+    // This can be enabled later when needed for iOS/Android
   }
   
   /// Initialize the subscription service
@@ -136,34 +160,46 @@ class IAPService extends ChangeNotifier {
     return remaining > 0 ? remaining : 0;
   }
   
-  /// Purchase premium subscription (simulated for now)
+    /// Purchase premium subscription using platform-specific IAP
   Future<bool> purchasePremium() async {
     try {
-      // For now, simulate a successful purchase
-      // In a real app, this would integrate with payment processing
-      _subscriptionStatus = SubscriptionStatus.premium;
+      // Use platform-specific service for purchase
+      final success = await _platformService.purchaseProduct(_premiumProductId);
       
-      // Save to Appwrite if user is authenticated
-      if (_currentUserId != null) {
-        await _saveUserToAppwrite();
-        await _logSubscriptionEvent('purchase', null, 'premium');
+      if (success) {
+        _subscriptionStatus = SubscriptionStatus.premium;
+        
+        // Save to Appwrite if user is authenticated
+        if (_currentUserId != null) {
+          await _saveUserToAppwrite();
+          await _logSubscriptionEvent('purchase', null, 'premium');
+        }
+        
+        await _saveSubscriptionStatus();
+        notifyListeners();
+        return true;
       }
       
-      await _saveSubscriptionStatus();
-      notifyListeners();
-      return true;
+      return false;
     } catch (e) {
       debugPrint('Error purchasing premium: $e');
       return false;
     }
   }
   
-  /// Restore purchases (simulated for now)
+  /// Restore purchases using platform-specific IAP
   Future<bool> restorePurchases() async {
     try {
-      // For now, just refresh the subscription status
-      await _refreshSubscriptionStatus();
-      return _subscriptionStatus == SubscriptionStatus.premium;
+      // Use platform-specific service for restore
+      final success = await _platformService.restorePurchases();
+      
+      if (success) {
+        // Refresh subscription status from platform
+        await _refreshSubscriptionStatus();
+        return _subscriptionStatus == SubscriptionStatus.premium;
+      }
+      
+      return false;
     } catch (e) {
       debugPrint('Error restoring purchases: $e');
       return false;
@@ -309,14 +345,33 @@ class IAPService extends ChangeNotifier {
     );
   }
   
+  /// Get product details from platform service
+  Future<ProductDetails?> getProductDetails() async {
+    try {
+      return await _platformService.getProductDetails(_premiumProductId);
+    } catch (e) {
+      debugPrint('Error getting product details: $e');
+      return null;
+    }
+  }
+  
   /// Get localized price for current platform
   String _getLocalizedPrice() {
+    // Try to get price from platform service first
+    _platformService.getProductDetails(_premiumProductId).then((details) {
+      if (details != null && details.price.isNotEmpty) {
+        return details.price;
+      }
+    });
+    
+    // Fallback to default pricing
     return '\$9.99/year';
   }
   
   /// Dispose resources
   @override
   void dispose() {
+    _platformService.dispose();
     super.dispose();
   }
 }

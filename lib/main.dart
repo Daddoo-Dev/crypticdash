@@ -8,6 +8,7 @@ import 'services/theme_service.dart';
 import 'services/project_selection_service.dart';
 import 'services/settings_service.dart';
 import 'services/logging_service.dart';
+import 'services/revenuecat_config_service.dart';
 
 import 'services/app_flow_service.dart';
 import 'services/onnx_ai_service.dart';
@@ -59,6 +60,15 @@ void main() async {
     LoggingService.error('Error loading .env file: $e', e, StackTrace.current);
     // Continue without .env file
   }
+  
+  // Initialize RevenueCat for supported platforms
+  try {
+    await RevenueCatConfigService.initialize();
+  } catch (e) {
+    LoggingService.warning('RevenueCat initialization failed: $e');
+    // Continue without RevenueCat
+  }
+  
   runApp(const CrypticDashApp());
 }
 
