@@ -12,15 +12,20 @@
 **Collection ID**: `users`
 
 **Attributes**:
-- `userId` - String (255), Required: ✓
-- `email` - Email, Required: ✓
+- `userId` - String (255), Required: ✓ (GitHub user ID)
+- `githubUsername` - String (255), Required: ✓
+- `email` - String (255), Required: ✓
+- `displayName` - String (255), Required: ✗
 - `subscriptionStatus` - String (255), Required: ✓
 - `trialStartDate` - Datetime, Required: ✗
 - `subscriptionExpiryDate` - Datetime, Required: ✗
 - `createdAt` - Datetime, Required: ✓
+- `updatedAt` - Datetime, Required: ✗
+- `lastLoginAt` - Datetime, Required: ✗
 
 **Indexes**:
 - `userId_unique` (key) on `userId`
+- `githubUsername_unique` (key) on `githubUsername`
 - `email_unique` (key) on `email`
 
 **Permissions**: `read("user:{{user.id}}")`, `write("user:{{user.id}}")`
@@ -64,3 +69,4 @@
 - Datetime fields store ISO 8601 format
 - Boolean fields default to false
 - Required fields must be provided when creating documents
+- The `userId` field stores the GitHub user ID as a string for consistency

@@ -69,6 +69,13 @@ class GitHubService extends ChangeNotifier {
 
   Future<bool> hasValidToken() async {
     LoggingService.debug('GitHubService: hasValidToken called');
+    
+    // Ensure token is loaded first
+    if (_accessToken == null) {
+      LoggingService.debug('GitHubService: Token not loaded, loading now...');
+      await _loadStoredToken();
+    }
+    
     LoggingService.debug('GitHubService: _accessToken is null: ${_accessToken == null}');
     LoggingService.debug('GitHubService: _accessToken is empty: ${_accessToken?.isEmpty ?? true}');
     
@@ -81,6 +88,22 @@ class GitHubService extends ChangeNotifier {
     // Test if the stored token is still valid
     final isValid = await testConnection();
     LoggingService.debug('GitHubService: Connection test result: $isValid');
+    
+    // If connection is valid, ensure Appwrite data exists
+    if (isValid) {
+      try {
+        final userData = await getAuthenticatedUser();
+        if (userData != null) {
+          LoggingService.debug('GitHubService: Got user data, ensuring Appwrite data exists');
+          // This will be called from the auth flow with access to Appwrite service
+          // For now, just log that we have the user data
+          LoggingService.debug('GitHubService: User ${userData['login']} (ID: ${userData['id']}) authenticated');
+        }
+      } catch (e) {
+        LoggingService.debug('GitHubService: Error getting user data: $e');
+      }
+    }
+    
     return isValid;
   }
 
@@ -160,7 +183,8 @@ class GitHubService extends ChangeNotifier {
     }
 
     try {
-      final response = await http.get(
+      // First, get the user profile data
+      final userResponse = await http.get(
         Uri.parse('$_baseUrl/user'),
         headers: {
           'Authorization': 'token $_accessToken',
@@ -168,8 +192,35 @@ class GitHubService extends ChangeNotifier {
         },
       );
 
-      if (response.statusCode == 200) {
-        final userData = json.decode(response.body);
+      if (userResponse.statusCode == 200) {
+        final userData = json.decode(userResponse.body);
+        
+        // Try to get email addresses separately
+        try {
+          final emailResponse = await http.get(
+            Uri.parse('$_baseUrl/user/emails'),
+            headers: {
+              'Authorization': 'token $_accessToken',
+              'Accept': 'application/vnd.github.v3+json',
+            },
+          );
+          
+          if (emailResponse.statusCode == 200) {
+            final emails = json.decode(emailResponse.body) as List;
+            if (emails.isNotEmpty) {
+              // Find the primary email or use the first one
+              final primaryEmail = emails.firstWhere(
+                (email) => email['primary'] == true,
+                orElse: () => emails.first,
+              );
+              userData['email'] = primaryEmail['email'];
+            }
+          }
+        } catch (e) {
+          // If email fetch fails, keep the original email (might be null)
+          debugPrint('Could not fetch email addresses: $e');
+        }
+        
         debugPrint('=== Authenticated User Debug ===');
         debugPrint('User ID: ${userData['id']}');
         debugPrint('Username: ${userData['login']}');
@@ -178,8 +229,8 @@ class GitHubService extends ChangeNotifier {
         debugPrint('=== End Debug ===');
         return userData;
       } else {
-        debugPrint('Failed to fetch user info: ${response.statusCode}');
-        debugPrint('Response body: ${response.body}');
+        debugPrint('Failed to fetch user info: ${userResponse.statusCode}');
+        debugPrint('Response body: ${userResponse.body}');
         return null;
       }
     } catch (e) {
@@ -457,5 +508,25 @@ class GitHubService extends ChangeNotifier {
         }
       }
     });
+  }
+
+  /// Ensure Appwrite data exists for the authenticated user
+  Future<void> ensureAppwriteDataExists() async {
+    try {
+      if (_accessToken == null || _accessToken!.isEmpty) {
+        LoggingService.debug('GitHubService: No token available for Appwrite check');
+        return;
+      }
+      
+      final userData = await getAuthenticatedUser();
+      if (userData != null) {
+        LoggingService.debug('GitHubService: Got user data, ensuring Appwrite data exists');
+        // This will be called from the auth flow with access to Appwrite service
+        // For now, just log that we have the user data
+        LoggingService.debug('GitHubService: User ${userData['login']} (ID: ${userData['id']}) authenticated');
+      }
+    } catch (e) {
+      LoggingService.debug('GitHubService: Error ensuring Appwrite data: $e');
+    }
   }
 }

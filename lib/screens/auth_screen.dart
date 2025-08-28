@@ -6,6 +6,7 @@ import '../services/github_oauth_service.dart';
 import '../services/theme_service.dart';
 import '../services/app_flow_service.dart';
 import '../services/user_identity_service.dart';
+import '../services/appwrite_auth_service.dart';
 import '../theme/app_themes.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -96,6 +97,22 @@ class _AuthScreenState extends State<AuthScreen> {
             email: userData['email'],
           );
           debugPrint('Stored user identity: ${userData['login']} (ID: ${userData['id']})');
+          
+          // Create or get Appwrite user account
+          final appwriteAuthService = Provider.of<AppwriteAuthService>(context, listen: false);
+          final appwriteUserId = await appwriteAuthService.createOrGetUserAccount(
+            githubUsername: userData['login'],
+            githubUserId: userData['id'],
+            email: userData['email'],
+            displayName: userData['name'],
+          );
+          
+          if (appwriteUserId != null) {
+            debugPrint('Appwrite user account created/retrieved: $appwriteUserId');
+            await appwriteAuthService.updateLastLogin();
+          } else {
+            debugPrint('Warning: Failed to create Appwrite user account');
+          }
         }
         
         if (mounted) {
@@ -161,6 +178,25 @@ class _AuthScreenState extends State<AuthScreen> {
                 email: userData['email'],
               );
               debugPrint('Stored user identity via OAuth: ${userData['login']} (ID: ${userData['id']})');
+              
+              // Create or get Appwrite user account
+              final appwriteAuthService = Provider.of<AppwriteAuthService>(context, listen: false);
+              debugPrint('AuthScreen: Got AppwriteAuthService instance for OAuth');
+              
+              final appwriteUserId = await appwriteAuthService.createOrGetUserAccount(
+                githubUsername: userData['login'],
+                githubUserId: userData['id'],
+                email: userData['email'],
+                displayName: userData['name'],
+              );
+              
+              if (appwriteUserId != null) {
+                debugPrint('AuthScreen: Appwrite user account created/retrieved via OAuth: $appwriteUserId');
+                await appwriteAuthService.updateLastLogin();
+                debugPrint('AuthScreen: Updated last login time via OAuth');
+              } else {
+                debugPrint('AuthScreen: Warning: Failed to create Appwrite user account via OAuth');
+              }
             }
             
             // Use AppFlowService to determine next screen
@@ -179,7 +215,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('OAuth authentication failed: $e'),
+            content: Text('OAuth Error: $e'),
             backgroundColor: AppThemes.errorRed,
           ),
         );

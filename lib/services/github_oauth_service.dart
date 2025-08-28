@@ -4,12 +4,13 @@ import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'logging_service.dart';
 
 class GitHubOAuthService {
   static String get _clientId => dotenv.env['GITHUB_CLIENT_ID'] ?? '';
   static String get _clientSecret => dotenv.env['GITHUB_CLIENT_SECRET'] ?? '';
   static String _redirectUri = 'http://localhost:8080/oauth/callback';
-  static const String _scope = 'repo';
+  static const String _scope = 'repo user:email';
   
   static const String _authorizationUrl = 'https://github.com/login/oauth/authorize';
   static const String _tokenUrl = 'https://github.com/login/oauth/access_token';
@@ -17,8 +18,13 @@ class GitHubOAuthService {
   /// Initiates the OAuth flow and returns an access token
   static Future<String?> authenticate() async {
     try {
+      LoggingService.debug('GitHubOAuthService: Starting OAuth authentication...');
+      LoggingService.debug('GitHubOAuthService: Client ID: ${_clientId.isNotEmpty ? "EXISTS" : "MISSING"}');
+      LoggingService.debug('GitHubOAuthService: Client Secret: ${_clientSecret.isNotEmpty ? "EXISTS" : "MISSING"}');
+      
       // Validate environment variables
       if (_clientId.isEmpty || _clientSecret.isEmpty) {
+        LoggingService.debug('GitHubOAuthService: CREDENTIALS MISSING - Client ID: "$_clientId", Secret: "${_clientSecret.isNotEmpty ? "EXISTS" : "MISSING"}"');
         throw Exception('GitHub OAuth credentials not configured. Please check your .env file.');
       }
       

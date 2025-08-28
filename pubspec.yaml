@@ -117,6 +117,7 @@ flutter:
     - assets/ai_models/gemma_3_270m_it/
     - assets/yeti_animation/
     - TODO_TEMPLATE.md
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

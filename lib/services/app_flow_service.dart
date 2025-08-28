@@ -6,6 +6,7 @@ import '../services/logging_service.dart';
 import '../screens/project_selection_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/auth_screen.dart';
+import '../services/appwrite_auth_service.dart';
 
 class AppFlowService {
   static Future<Widget> getInitialScreen(BuildContext context) async {
@@ -19,6 +20,7 @@ class AppFlowService {
       
       // Check if user has a valid GitHub token
       LoggingService.debug('AppFlowService: Checking if user has valid GitHub token...');
+      
       final hasValidToken = await githubService.hasValidToken();
       LoggingService.debug('AppFlowService: hasValidToken result: $hasValidToken');
       
@@ -26,6 +28,24 @@ class AppFlowService {
         LoggingService.info('AppFlowService: No valid token, returning AuthScreen');
         // No valid token, show auth screen
         return const AuthScreen();
+      }
+      
+      // User has valid token, ensure Appwrite data exists
+      LoggingService.debug('AppFlowService: User has valid token, ensuring Appwrite data exists...');
+      try {
+        final userData = await githubService.getAuthenticatedUser();
+        if (userData != null) {
+          final appwriteAuthService = Provider.of<AppwriteAuthService>(context, listen: false);
+          await appwriteAuthService.ensureUserDataExists(
+            githubUsername: userData['login'],
+            githubUserId: userData['id'],
+            email: userData['email'],
+            displayName: userData['name'],
+          );
+          LoggingService.debug('AppFlowService: Appwrite data check completed');
+        }
+      } catch (e) {
+        LoggingService.warning('AppFlowService: Error ensuring Appwrite data: $e');
       }
       
       LoggingService.debug('AppFlowService: User has valid token, checking setup status...');

@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:appwrite/appwrite.dart';
 import 'platform_iap_services.dart';
-
+import 'appwrite_auth_service.dart';
+import 'logging_service.dart';
 
 /// Appwrite-based subscription service for CrypticDash
 class IAPService extends ChangeNotifier {
@@ -20,15 +21,16 @@ class IAPService extends ChangeNotifier {
   SubscriptionStatus _subscriptionStatus = SubscriptionStatus.free;
   DateTime? _trialStartDate;
   bool _isInitialized = false;
-  String? _currentUserId;
   
   // Appwrite services
   late final Client _client;
   late final Databases _databases;
-  late final Account _account;
   
   // Platform-specific IAP services
   late final PlatformIAPService _platformService;
+  
+  // Appwrite auth service reference
+  AppwriteAuthService? _authService;
   
   // Getters
   SubscriptionStatus get subscriptionStatus => _subscriptionStatus;
@@ -41,6 +43,20 @@ class IAPService extends ChangeNotifier {
     _initializeAppwrite();
   }
   
+  /// Set the Appwrite auth service reference
+  void setAuthService(AppwriteAuthService authService) {
+    _authService = authService;
+    _authService!.addListener(_onAuthStatusChanged);
+    _refreshSubscriptionStatus();
+  }
+  
+  /// Handle auth status changes
+  void _onAuthStatusChanged() {
+    if (_authService?.isAuthenticated == true) {
+      _refreshSubscriptionStatus();
+    }
+  }
+  
   /// Initialize Appwrite client
   void _initializeAppwrite() {
     _client = Client()
@@ -48,7 +64,6 @@ class IAPService extends ChangeNotifier {
       ..setProject(_projectId);
     
     _databases = Databases(_client);
-    _account = Account(_client);
     
     _initializePlatformService();
     _initializeService();
@@ -79,32 +94,14 @@ class IAPService extends ChangeNotifier {
       // Load stored data first
       await _loadStoredData();
       
-      // Try to get current user from Appwrite
-      await _getCurrentUser();
-      
-      // Check current subscription status
-      await _refreshSubscriptionStatus();
-      
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error initializing Appwrite subscription service: $e');
+      LoggingService.error('Error initializing Appwrite subscription service: $e', e, StackTrace.current);
       // Fallback to stored data
       await _loadStoredData();
       _isInitialized = true;
       notifyListeners();
-    }
-  }
-  
-  /// Get current user from Appwrite
-  Future<void> _getCurrentUser() async {
-    try {
-      final session = await _account.getSession(sessionId: 'current');
-      _currentUserId = session.userId;
-      debugPrint('Current user ID: $_currentUserId');
-    } catch (e) {
-      debugPrint('No active session, using local data: $e');
-      _currentUserId = null;
     }
   }
   
@@ -137,7 +134,7 @@ class IAPService extends ChangeNotifier {
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error loading IAP data: $e');
+      LoggingService.error('Error loading IAP data: $e', e, StackTrace.current);
       _isInitialized = true;
       notifyListeners();
     }
@@ -160,7 +157,7 @@ class IAPService extends ChangeNotifier {
     return remaining > 0 ? remaining : 0;
   }
   
-    /// Purchase premium subscription using platform-specific IAP
+  /// Purchase premium subscription using platform-specific IAP
   Future<bool> purchasePremium() async {
     try {
       // Use platform-specific service for purchase
@@ -170,7 +167,7 @@ class IAPService extends ChangeNotifier {
         _subscriptionStatus = SubscriptionStatus.premium;
         
         // Save to Appwrite if user is authenticated
-        if (_currentUserId != null) {
+        if (_authService?.isAuthenticated == true) {
           await _saveUserToAppwrite();
           await _logSubscriptionEvent('purchase', null, 'premium');
         }
@@ -182,7 +179,7 @@ class IAPService extends ChangeNotifier {
       
       return false;
     } catch (e) {
-      debugPrint('Error purchasing premium: $e');
+      LoggingService.error('Error purchasing premium: $e', e, StackTrace.current);
       return false;
     }
   }
@@ -201,7 +198,7 @@ class IAPService extends ChangeNotifier {
       
       return false;
     } catch (e) {
-      debugPrint('Error restoring purchases: $e');
+      LoggingService.error('Error restoring purchases: $e', e, StackTrace.current);
       return false;
     }
   }
@@ -209,7 +206,7 @@ class IAPService extends ChangeNotifier {
   /// Check subscription status with Appwrite
   Future<void> _refreshSubscriptionStatus() async {
     try {
-      if (_currentUserId != null) {
+      if (_authService?.isAuthenticated == true) {
         // Try to get user data from Appwrite
         final userData = await _getUserFromAppwrite();
         if (userData != null) {
@@ -223,28 +220,19 @@ class IAPService extends ChangeNotifier {
       await _saveSubscriptionStatus();
       notifyListeners();
     } catch (e) {
-      debugPrint('Error refreshing subscription status: $e');
+      LoggingService.error('Error refreshing subscription status: $e', e, StackTrace.current);
     }
   }
   
   /// Get user data from Appwrite
   Future<Map<String, dynamic>?> _getUserFromAppwrite() async {
     try {
-      final documents = await _databases.listDocuments(
-        databaseId: _databaseId,
-        collectionId: 'users',
-        queries: [
-          Query.equal('userId', _currentUserId),
-        ],
-      );
+      if (_authService?.currentUserId == null) return null;
       
-      if (documents.documents.isNotEmpty) {
-        final userDoc = documents.documents.first;
-        return userDoc.data;
-      }
-      return null;
+      final userData = await _authService!.getCurrentUserData();
+      return userData;
     } catch (e) {
-      debugPrint('Error getting user from Appwrite: $e');
+      LoggingService.error('Error getting user from Appwrite: $e', e, StackTrace.current);
       return null;
     }
   }
@@ -252,46 +240,23 @@ class IAPService extends ChangeNotifier {
   /// Save user to Appwrite
   Future<void> _saveUserToAppwrite() async {
     try {
-      final userData = {
-        'userId': _currentUserId,
-        'email': 'user@example.com', // This should come from actual user data
-        'subscriptionStatus': _subscriptionStatus.toString(),
-        'trialStartDate': _trialStartDate?.toIso8601String(),
-        'subscriptionExpiryDate': null, // Set when implementing real expiry
-        'createdAt': DateTime.now().toIso8601String(),
-      };
+      if (_authService?.currentUserId == null) return;
       
-      // Check if user already exists
-      final existingUser = await _getUserFromAppwrite();
-      if (existingUser != null) {
-        // Update existing user
-        await _databases.updateDocument(
-          databaseId: _databaseId,
-          collectionId: 'users',
-          documentId: existingUser['\$id'],
-          data: userData,
-        );
-      } else {
-        // Create new user
-        await _databases.createDocument(
-          databaseId: _databaseId,
-          collectionId: 'users',
-          documentId: 'unique()',
-          data: userData,
-        );
-      }
+      await _authService!.updateSubscriptionStatus(_subscriptionStatus.toString());
       
-      debugPrint('User saved to Appwrite successfully');
+      LoggingService.success('User subscription updated in Appwrite successfully');
     } catch (e) {
-      debugPrint('Error saving user to Appwrite: $e');
+      LoggingService.error('Error saving user to Appwrite: $e', e, StackTrace.current);
     }
   }
   
   /// Log subscription event to Appwrite
   Future<void> _logSubscriptionEvent(String eventType, String? oldStatus, String newStatus) async {
     try {
+      if (_authService?.currentUserId == null) return;
+      
       final eventData = {
-        'userId': _currentUserId,
+        'userId': _authService!.currentUserId,
         'eventType': eventType,
         'oldStatus': oldStatus,
         'newStatus': newStatus,
@@ -306,9 +271,9 @@ class IAPService extends ChangeNotifier {
         data: eventData,
       );
       
-      debugPrint('Subscription event logged to Appwrite');
+      LoggingService.success('Subscription event logged to Appwrite');
     } catch (e) {
-      debugPrint('Error logging subscription event: $e');
+      LoggingService.error('Error logging subscription event: $e', e, StackTrace.current);
     }
   }
   
@@ -330,7 +295,7 @@ class IAPService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_subscriptionKey, _subscriptionStatus.toString());
     } catch (e) {
-      debugPrint('Error saving subscription status: $e');
+      LoggingService.error('Error saving subscription status: $e', e, StackTrace.current);
     }
   }
   
@@ -350,28 +315,23 @@ class IAPService extends ChangeNotifier {
     try {
       return await _platformService.getProductDetails(_premiumProductId);
     } catch (e) {
-      debugPrint('Error getting product details: $e');
+      LoggingService.error('Error getting product details: $e', e, StackTrace.current);
       return null;
     }
   }
   
-  /// Get localized price for current platform
+  /// Get localized price for display
   String _getLocalizedPrice() {
-    // Try to get price from platform service first
-    _platformService.getProductDetails(_premiumProductId).then((details) {
-      if (details != null && details.price.isNotEmpty) {
-        return details.price;
-      }
-    });
-    
-    // Fallback to default pricing
+    // This would come from platform-specific service
+    // For now, return a placeholder
     return '\$9.99/year';
   }
   
-  /// Dispose resources
   @override
   void dispose() {
-    _platformService.dispose();
+    if (_authService != null) {
+      _authService!.removeListener(_onAuthStatusChanged);
+    }
     super.dispose();
   }
 }
