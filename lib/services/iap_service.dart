@@ -1,36 +1,39 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:appwrite/appwrite.dart';
+import 'package:logger/logger.dart';
 import 'platform_iap_services.dart';
-import 'appwrite_auth_service.dart';
-import 'logging_service.dart';
+import 'stripe_user_service.dart';
 
-/// Appwrite-based subscription service for CrypticDash
+import 'revenuecat_service.dart';
+
+
+/// Stripe-based subscription service for CrypticDash
 class IAPService extends ChangeNotifier {
-  static const String _premiumProductId = 'crypticdash_premium_yearly';
+  static const String _premiumProductId = 'prod_SxsF2cOTVz2LUQ';
+
   static const String _trialKey = 'trial_start_date';
   static const String _subscriptionKey = 'subscription_status';
-  
-  // Appwrite configuration
-  static const String _projectId = 'nyc-68ac6493003072efa8c5';
-  static const String _databaseId = '68ac64ea0032f91f0fc7';
-  static const String _endpoint = 'https://cloud.appwrite.io';
   
   // Subscription state
   SubscriptionStatus _subscriptionStatus = SubscriptionStatus.free;
   DateTime? _trialStartDate;
   bool _isInitialized = false;
   
-  // Appwrite services
-  late final Client _client;
-  late final Databases _databases;
-  
   // Platform-specific IAP services
   late final PlatformIAPService _platformService;
   
-  // Appwrite auth service reference
-  AppwriteAuthService? _authService;
+  // Stripe user service reference
+  StripeUserService? _userService;
+  
+  final _logger = Logger();
+  
+  // Stripe service
+  late final StripeService _stripeService;
+  
+  // Current state
+  bool _hasPremiumAccess = false;
+  String? _currentUserId;
   
   // Getters
   SubscriptionStatus get subscriptionStatus => _subscriptionStatus;
@@ -38,32 +41,30 @@ class IAPService extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   bool get isPremiumActive => _subscriptionStatus == SubscriptionStatus.premium;
   bool get isInTrialPeriod => _isInTrialPeriod();
+  bool get hasPremiumAccess => _hasPremiumAccess;
+  String? get currentUserId => _currentUserId;
   
   IAPService() {
-    _initializeAppwrite();
+    _initializeStripe();
   }
   
-  /// Set the Appwrite auth service reference
-  void setAuthService(AppwriteAuthService authService) {
-    _authService = authService;
-    _authService!.addListener(_onAuthStatusChanged);
+  /// Set the Stripe user service reference
+  void setAuthService(StripeUserService userService) {
+    _userService = userService;
+    _userService!.addListener(_onAuthStatusChanged);
     _refreshSubscriptionStatus();
   }
   
   /// Handle auth status changes
   void _onAuthStatusChanged() {
-    if (_authService?.isAuthenticated == true) {
+    if (_userService?.isAuthenticated == true) {
       _refreshSubscriptionStatus();
     }
   }
   
-  /// Initialize Appwrite client
-  void _initializeAppwrite() {
-    _client = Client()
-      ..setEndpoint(_endpoint)
-      ..setProject(_projectId);
-    
-    _databases = Databases(_client);
+  /// Initialize Stripe client
+  void _initializeStripe() {
+    _stripeService = StripeService();
     
     _initializePlatformService();
     _initializeService();
@@ -97,7 +98,7 @@ class IAPService extends ChangeNotifier {
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
-      LoggingService.error('Error initializing Appwrite subscription service: $e', e, StackTrace.current);
+      _logger.e('Error initializing Stripe subscription service: $e', error: e, stackTrace: StackTrace.current);
       // Fallback to stored data
       await _loadStoredData();
       _isInitialized = true;
@@ -134,7 +135,7 @@ class IAPService extends ChangeNotifier {
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
-      LoggingService.error('Error loading IAP data: $e', e, StackTrace.current);
+      _logger.e('Error loading IAP data: $e', error: e, stackTrace: StackTrace.current);
       _isInitialized = true;
       notifyListeners();
     }
@@ -166,11 +167,11 @@ class IAPService extends ChangeNotifier {
       if (success) {
         _subscriptionStatus = SubscriptionStatus.premium;
         
-        // Save to Appwrite if user is authenticated
-        if (_authService?.isAuthenticated == true) {
-          await _saveUserToAppwrite();
-          await _logSubscriptionEvent('purchase', null, 'premium');
-        }
+                 // Save to Stripe if user is authenticated
+         if (_userService?.isAuthenticated == true) {
+           await _saveUserToStripe();
+           await _logSubscriptionEvent('purchase');
+         }
         
         await _saveSubscriptionStatus();
         notifyListeners();
@@ -179,7 +180,7 @@ class IAPService extends ChangeNotifier {
       
       return false;
     } catch (e) {
-      LoggingService.error('Error purchasing premium: $e', e, StackTrace.current);
+      _logger.e('Error purchasing premium: $e', error: e, stackTrace: StackTrace.current);
       return false;
     }
   }
@@ -198,96 +199,64 @@ class IAPService extends ChangeNotifier {
       
       return false;
     } catch (e) {
-      LoggingService.error('Error restoring purchases: $e', e, StackTrace.current);
+      _logger.e('Error restoring purchases: $e', error: e, stackTrace: StackTrace.current);
       return false;
     }
   }
   
-  /// Check subscription status with Appwrite
+  /// Refresh subscription status
   Future<void> _refreshSubscriptionStatus() async {
     try {
-      if (_authService?.isAuthenticated == true) {
-        // Try to get user data from Appwrite
-        final userData = await _getUserFromAppwrite();
-        if (userData != null) {
-          _subscriptionStatus = _parseSubscriptionStatus(userData['subscriptionStatus']);
-          if (userData['trialStartDate'] != null) {
-            _trialStartDate = DateTime.parse(userData['trialStartDate']);
-          }
-        }
-      }
+      if (_currentUserId == null) return;
       
-      await _saveSubscriptionStatus();
+      // Check Stripe service for subscription status
+      final status = await _stripeService.getUserSubscriptionStatus(_currentUserId!);
+      _hasPremiumAccess = status == 'premium';
+      _logger.d('Subscription status updated: $_hasPremiumAccess');
+      
       notifyListeners();
     } catch (e) {
-      LoggingService.error('Error refreshing subscription status: $e', e, StackTrace.current);
+      _logger.e('Error refreshing subscription status: $e', error: e, stackTrace: StackTrace.current);
     }
   }
   
-  /// Get user data from Appwrite
-  Future<Map<String, dynamic>?> _getUserFromAppwrite() async {
+
+  
+  /// Save user subscription data to Stripe
+  Future<void> _saveUserToStripe() async {
     try {
-      if (_authService?.currentUserId == null) return null;
+      if (_currentUserId == null) return;
       
-      final userData = await _authService!.getCurrentUserData();
-      return userData;
+      // Update subscription status in Stripe
+      await _userService!.updateSubscriptionStatus(_hasPremiumAccess ? 'premium' : 'free');
+      _logger.i('User subscription status updated in Stripe: ${_hasPremiumAccess ? 'premium' : 'free'}');
+      notifyListeners();
     } catch (e) {
-      LoggingService.error('Error getting user from Appwrite: $e', e, StackTrace.current);
-      return null;
+      _logger.e('Error saving user to Stripe: $e', error: e, stackTrace: StackTrace.current);
     }
   }
   
-  /// Save user to Appwrite
-  Future<void> _saveUserToAppwrite() async {
+  /// Log subscription event to Stripe
+  Future<void> _logSubscriptionEvent(String eventType) async {
     try {
-      if (_authService?.currentUserId == null) return;
+      if (_currentUserId == null) return;
       
-      await _authService!.updateSubscriptionStatus(_subscriptionStatus.toString());
+             // Event data for logging
+       final eventData = {
+         'userId': _currentUserId,
+         'eventType': eventType,
+         'timestamp': DateTime.now().toIso8601String(),
+         'subscriptionStatus': _hasPremiumAccess ? 'premium' : 'free',
+       };
       
-      LoggingService.success('User subscription updated in Appwrite successfully');
+             // For now, just log locally since Stripe service handles events differently
+       _logger.i('Subscription event: $eventType for user $_currentUserId - Data: $eventData');
     } catch (e) {
-      LoggingService.error('Error saving user to Appwrite: $e', e, StackTrace.current);
+      _logger.e('Error logging subscription event: $e', error: e, stackTrace: StackTrace.current);
     }
   }
   
-  /// Log subscription event to Appwrite
-  Future<void> _logSubscriptionEvent(String eventType, String? oldStatus, String newStatus) async {
-    try {
-      if (_authService?.currentUserId == null) return;
-      
-      final eventData = {
-        'userId': _authService!.currentUserId,
-        'eventType': eventType,
-        'oldStatus': oldStatus,
-        'newStatus': newStatus,
-        'timestamp': DateTime.now().toIso8601String(),
-        'platform': Platform.operatingSystem,
-      };
-      
-      await _databases.createDocument(
-        databaseId: _databaseId,
-        collectionId: 'subscription_events',
-        documentId: 'unique()',
-        data: eventData,
-      );
-      
-      LoggingService.success('Subscription event logged to Appwrite');
-    } catch (e) {
-      LoggingService.error('Error logging subscription event: $e', e, StackTrace.current);
-    }
-  }
-  
-  /// Parse subscription status from string
-  SubscriptionStatus _parseSubscriptionStatus(String status) {
-    switch (status.toLowerCase()) {
-      case 'premium':
-        return SubscriptionStatus.premium;
-      case 'expired':
-        return SubscriptionStatus.expired;
-      default:
-        return SubscriptionStatus.free;
-    }
-  }
+
   
   /// Save subscription status to local storage
   Future<void> _saveSubscriptionStatus() async {
@@ -295,7 +264,7 @@ class IAPService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_subscriptionKey, _subscriptionStatus.toString());
     } catch (e) {
-      LoggingService.error('Error saving subscription status: $e', e, StackTrace.current);
+      _logger.e('Error saving subscription status: $e', error: e, stackTrace: StackTrace.current);
     }
   }
   
@@ -315,7 +284,7 @@ class IAPService extends ChangeNotifier {
     try {
       return await _platformService.getProductDetails(_premiumProductId);
     } catch (e) {
-      LoggingService.error('Error getting product details: $e', e, StackTrace.current);
+      _logger.e('Error getting product details: $e', error: e, stackTrace: StackTrace.current);
       return null;
     }
   }
@@ -329,8 +298,8 @@ class IAPService extends ChangeNotifier {
   
   @override
   void dispose() {
-    if (_authService != null) {
-      _authService!.removeListener(_onAuthStatusChanged);
+    if (_userService != null) {
+      _userService!.removeListener(_onAuthStatusChanged);
     }
     super.dispose();
   }

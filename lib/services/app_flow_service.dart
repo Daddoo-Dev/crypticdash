@@ -2,68 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/github_service.dart';
 import '../services/project_selection_service.dart';
-import '../services/logging_service.dart';
+import 'package:logger/logger.dart';
 import '../screens/project_selection_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/auth_screen.dart';
-import '../services/appwrite_auth_service.dart';
+import '../services/stripe_user_service.dart';
 
 class AppFlowService {
+  static final _logger = Logger();
+  
   static Future<Widget> getInitialScreen(BuildContext context) async {
-    LoggingService.debug('AppFlowService: Starting getInitialScreen...');
+    _logger.d('AppFlowService: Starting getInitialScreen...');
     try {
       final githubService = Provider.of<GitHubService>(context, listen: false);
-      LoggingService.debug('AppFlowService: Got GitHubService instance');
+      _logger.d('AppFlowService: Got GitHubService instance');
       
       final projectSelectionService = Provider.of<ProjectSelectionService>(context, listen: false);
-      LoggingService.debug('AppFlowService: Got ProjectSelectionService instance');
+      _logger.d('AppFlowService: Got ProjectSelectionService instance');
+      
+      final stripeUserService = Provider.of<StripeUserService>(context, listen: false);
+      _logger.d('AppFlowService: Got StripeUserService instance');
       
       // Check if user has a valid GitHub token
-      LoggingService.debug('AppFlowService: Checking if user has valid GitHub token...');
+      _logger.d('AppFlowService: Checking if user has valid GitHub token...');
       
       final hasValidToken = await githubService.hasValidToken();
-      LoggingService.debug('AppFlowService: hasValidToken result: $hasValidToken');
+      _logger.d('AppFlowService: hasValidToken result: $hasValidToken');
       
       if (!hasValidToken) {
-        LoggingService.info('AppFlowService: No valid token, returning AuthScreen');
+        _logger.i('AppFlowService: No valid token, returning AuthScreen');
         // No valid token, show auth screen
         return const AuthScreen();
       }
       
-      // User has valid token, ensure Appwrite data exists
-      LoggingService.debug('AppFlowService: User has valid token, ensuring Appwrite data exists...');
+      // User has valid token, ensure Stripe data exists
+      _logger.d('AppFlowService: User has valid token, ensuring Stripe data exists...');
       try {
         final userData = await githubService.getAuthenticatedUser();
         if (userData != null) {
-          final appwriteAuthService = Provider.of<AppwriteAuthService>(context, listen: false);
-          await appwriteAuthService.ensureUserDataExists(
+          await stripeUserService.ensureUserDataExists(
             githubUsername: userData['login'],
             githubUserId: userData['id'],
             email: userData['email'],
             displayName: userData['name'],
           );
-          LoggingService.debug('AppFlowService: Appwrite data check completed');
+          _logger.d('AppFlowService: Stripe data check completed');
         }
       } catch (e) {
-        LoggingService.warning('AppFlowService: Error ensuring Appwrite data: $e');
+        _logger.w('AppFlowService: Error ensuring Stripe data: $e');
       }
       
-      LoggingService.debug('AppFlowService: User has valid token, checking setup status...');
+      _logger.d('AppFlowService: User has valid token, checking setup status...');
       // Check if user has completed setup and has projects selected
       final shouldShowSetup = projectSelectionService.shouldShowSetupScreen();
-      LoggingService.debug('AppFlowService: shouldShowSetup result: $shouldShowSetup');
+      _logger.d('AppFlowService: shouldShowSetup result: $shouldShowSetup');
       
       if (shouldShowSetup) {
-        LoggingService.info('AppFlowService: User needs setup, returning ProjectSelectionScreen');
+        _logger.i('AppFlowService: User needs setup, returning ProjectSelectionScreen');
         // User needs to complete setup or has no projects selected
         return const ProjectSelectionScreen(isSetupMode: true);
       } else {
-        LoggingService.success('AppFlowService: User setup complete, returning DashboardScreen');
+        _logger.i('AppFlowService: User setup complete, returning DashboardScreen');
         // User has completed setup and has projects, go to dashboard
         return const DashboardScreen();
       }
     } catch (e, stackTrace) {
-      LoggingService.error('AppFlowService: Error in getInitialScreen: $e', e, stackTrace);
+      _logger.e('AppFlowService: Error in getInitialScreen: $e', error: e, stackTrace: stackTrace);
       // If there's an error, default to auth screen
       return const AuthScreen();
     }

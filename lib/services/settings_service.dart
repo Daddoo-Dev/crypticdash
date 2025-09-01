@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 class SettingsService extends ChangeNotifier {
   static const String _autoRefreshKey = 'auto_refresh_enabled';
@@ -172,6 +173,18 @@ class SettingsService extends ChangeNotifier {
     } else {
       return 'Just now';
     }
+  }
+
+  String getFormattedDateTime(DateTime dateTime) {
+    return DateFormat.yMMMd().add_jm().format(dateTime);
+  }
+
+  String getFormattedDate(DateTime dateTime) {
+    return DateFormat.yMMMd().format(dateTime);
+  }
+
+  String getFormattedTime(DateTime dateTime) {
+    return DateFormat.jm().format(dateTime);
   }
 
   // Get all settings as a map for export

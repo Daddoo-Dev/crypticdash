@@ -69,10 +69,10 @@ class _YetiLoadingWidgetState extends State<YetiLoadingWidget>
         width: double.infinity,
         padding: const EdgeInsets.all(24.0),
         decoration: BoxDecoration(
-          color: AppThemes.primaryBlue.withValues(alpha: 0.05),
+                        color: AppThemes.primaryBlue.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16.0),
           border: Border.all(
-            color: AppThemes.primaryBlue.withValues(alpha: 0.2),
+                         color: AppThemes.primaryBlue.withValues(alpha: 0.2),
             width: 1.0,
           ),
         ),
@@ -85,7 +85,7 @@ class _YetiLoadingWidgetState extends State<YetiLoadingWidget>
               height: 120,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(60),
-                color: AppThemes.primaryBlue.withValues(alpha: 0.1),
+                                 color: AppThemes.primaryBlue.withValues(alpha: 0.1),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(60),
@@ -122,7 +122,7 @@ class _YetiLoadingWidgetState extends State<YetiLoadingWidget>
               'The yeti is analyzing your repository...',
               style: TextStyle(
                 fontSize: 14,
-                color: AppThemes.primaryBlue.withValues(alpha: 0.7),
+                                 color: AppThemes.primaryBlue.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),

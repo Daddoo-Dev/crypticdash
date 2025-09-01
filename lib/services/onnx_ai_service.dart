@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:onnxruntime/onnxruntime.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import 'package:crypticdash/services/logging_service.dart';
+import 'package:logger/logger.dart';
 
 class ONNXAIService extends ChangeNotifier {
+  static final _logger = Logger();
   bool _enabled = false;
   bool _modelLoaded = false;
   String _statusMessage = 'ONNX AI: Initializing...';
@@ -1311,7 +1312,7 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
 
   /// Post-process generated content to ensure quality and consistency
   String _postProcessGeneratedContent(String content, String projectType) {
-    LoggingService.info('ONNX AI: Post-processing content for project type: $projectType');
+            _logger.i('ONNX AI: Post-processing content for project type: $projectType');
     
     // Remove any duplicate tasks that might have been generated
     final lines = content.split('\n');
@@ -1330,7 +1331,7 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
           seenTasks.add(normalizedTask);
           cleanedLines.add(line);
         } else {
-          LoggingService.info('ONNX AI: Removed duplicate task: $taskContent');
+          _logger.i('ONNX AI: Removed duplicate task: $taskContent');
         }
         // Skip duplicate tasks
       } else {
@@ -1339,7 +1340,7 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
       }
     }
     
-    LoggingService.info('ONNX AI: Removed ${lines.length - cleanedLines.length} duplicate tasks');
+          _logger.i('ONNX AI: Removed ${lines.length - cleanedLines.length} duplicate tasks');
     
     // Ensure framework-specific content
     String processedContent = cleanedLines.join('\n');
@@ -1390,7 +1391,7 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
     
     for (final pattern in forbiddenPatterns) {
       if (processedContent.contains(pattern)) {
-        LoggingService.info('ONNX AI: Replacing forbidden pattern: $pattern');
+        _logger.i('ONNX AI: Replacing forbidden pattern: $pattern');
         // Replace with appropriate framework-specific content
         switch (projectType) {
           case 'flutter':
@@ -1409,7 +1410,7 @@ ${merged['Roadmap']?.map((task) => '- $task').join('\n') ?? '- Complete MVP deve
       }
     }
     
-    LoggingService.info('ONNX AI: Post-processing complete for $projectType project');
+    _logger.i('ONNX AI: Post-processing complete for $projectType project');
     return processedContent;
   }
   

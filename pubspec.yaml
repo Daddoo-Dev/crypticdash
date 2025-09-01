@@ -76,14 +76,21 @@ dependencies:
   json_annotation: ^4.8.1
   onnxruntime: ^1.4.1
   
-  # Appwrite Backend
-  appwrite: ^17.1.0
-  
   # In-App Purchase
   in_app_purchase: ^3.1.13
   
-  # RevenueCat Integration
-  purchases_flutter: ^6.0.0
+  # Stripe Integration
+  stripe_platform_interface: ^12.0.0
+  stripe_android: ^12.0.1
+  stripe_ios: ^12.0.1
+  url_launcher_web: ^2.4.1
+  
+  # UUID generation for customer IDs
+  uuid: ^4.5.1
+  
+  # Logging
+  logger: ^2.6.1  # Professional logging package
+
 
 dev_dependencies:
   flutter_test:

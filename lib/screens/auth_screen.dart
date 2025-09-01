@@ -6,7 +6,7 @@ import '../services/github_oauth_service.dart';
 import '../services/theme_service.dart';
 import '../services/app_flow_service.dart';
 import '../services/user_identity_service.dart';
-import '../services/appwrite_auth_service.dart';
+import '../services/stripe_user_service.dart';
 import '../theme/app_themes.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -82,11 +82,14 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       final token = _tokenController.text.trim();
       final githubService = Provider.of<GitHubService>(context, listen: false);
+      final stripeUserService = Provider.of<StripeUserService>(context, listen: false);
+      
       await githubService.setAccessToken(token);
       
       final isConnected = await githubService.testConnection();
       
       if (isConnected) {
+        
         // Fetch and store user identity
         final userData = await githubService.getAuthenticatedUser();
         if (userData != null) {
@@ -98,27 +101,27 @@ class _AuthScreenState extends State<AuthScreen> {
           );
           debugPrint('Stored user identity: ${userData['login']} (ID: ${userData['id']})');
           
-          // Create or get Appwrite user account
-          final appwriteAuthService = Provider.of<AppwriteAuthService>(context, listen: false);
-          final appwriteUserId = await appwriteAuthService.createOrGetUserAccount(
+                // Create or get Stripe user account
+      final stripeCustomerId = await stripeUserService.createOrGetUserAccount(
             githubUsername: userData['login'],
             githubUserId: userData['id'],
             email: userData['email'],
             displayName: userData['name'],
           );
           
-          if (appwriteUserId != null) {
-            debugPrint('Appwrite user account created/retrieved: $appwriteUserId');
-            await appwriteAuthService.updateLastLogin();
-          } else {
-            debugPrint('Warning: Failed to create Appwrite user account');
-          }
+                if (stripeCustomerId != null) {
+        debugPrint('Stripe customer account created/retrieved: $stripeCustomerId');
+        await stripeUserService.updateLastLogin();
+      } else {
+        debugPrint('Warning: Failed to create Stripe customer account');
+      }
         }
         
         if (mounted) {
+          final navigator = Navigator.of(context);
           final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
           if (mounted) {
-            Navigator.of(context).pushReplacement(
+            navigator.pushReplacement(
               MaterialPageRoute(builder: (context) => nextScreen),
             );
           }
@@ -163,6 +166,8 @@ class _AuthScreenState extends State<AuthScreen> {
         // OAuth succeeded, proceed with authentication
         if (mounted) {
           final githubService = Provider.of<GitHubService>(context, listen: false);
+          final stripeUserService = Provider.of<StripeUserService>(context, listen: false);
+          
           await githubService.setAccessToken(accessToken);
           
           final isConnected = await githubService.testConnection();
@@ -179,31 +184,31 @@ class _AuthScreenState extends State<AuthScreen> {
               );
               debugPrint('Stored user identity via OAuth: ${userData['login']} (ID: ${userData['id']})');
               
-              // Create or get Appwrite user account
-              final appwriteAuthService = Provider.of<AppwriteAuthService>(context, listen: false);
-              debugPrint('AuthScreen: Got AppwriteAuthService instance for OAuth');
-              
-              final appwriteUserId = await appwriteAuthService.createOrGetUserAccount(
+                    // Create or get Stripe user account
+      debugPrint('AuthScreen: Got StripeUserService instance for OAuth');
+      
+      final stripeCustomerId = await stripeUserService.createOrGetUserAccount(
                 githubUsername: userData['login'],
                 githubUserId: userData['id'],
                 email: userData['email'],
                 displayName: userData['name'],
               );
               
-              if (appwriteUserId != null) {
-                debugPrint('AuthScreen: Appwrite user account created/retrieved via OAuth: $appwriteUserId');
-                await appwriteAuthService.updateLastLogin();
+              if (stripeCustomerId != null) {
+                debugPrint('AuthScreen: Stripe customer account created/retrieved via OAuth: $stripeCustomerId');
+                await stripeUserService.updateLastLogin();
                 debugPrint('AuthScreen: Updated last login time via OAuth');
               } else {
-                debugPrint('AuthScreen: Warning: Failed to create Appwrite user account via OAuth');
+                debugPrint('AuthScreen: Warning: Failed to create Stripe customer account via OAuth');
               }
             }
             
             // Use AppFlowService to determine next screen
             if (mounted) {
+              final navigator = Navigator.of(context);
               final nextScreen = await AppFlowService.getNextScreenAfterAuth(context);
               if (mounted) {
-                Navigator.of(context).pushReplacement(
+                navigator.pushReplacement(
                   MaterialPageRoute(builder: (context) => nextScreen),
                 );
               }

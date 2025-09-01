@@ -3,12 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/github_repository.dart';
-import 'logging_service.dart';
+import 'package:logger/logger.dart';
 
 class GitHubService extends ChangeNotifier {
   static const String _tokenKey = 'github_access_token';
   String? _accessToken;
   final String _baseUrl = 'https://api.github.com';
+  final _logger = Logger();
 
   String? get accessToken => _accessToken;
 
@@ -17,23 +18,23 @@ class GitHubService extends ChangeNotifier {
   }
 
   Future<void> _loadStoredToken() async {
-    LoggingService.debug('GitHubService: _loadStoredToken called');
+    _logger.d('GitHubService: _loadStoredToken called');
     try {
       final prefs = await SharedPreferences.getInstance();
-      LoggingService.debug('GitHubService: Got SharedPreferences instance');
+      _logger.d('GitHubService: Got SharedPreferences instance');
       
       final storedToken = prefs.getString(_tokenKey);
-      LoggingService.debug('GitHubService: Stored token from SharedPreferences: ${storedToken != null ? "exists" : "null"}');
+      _logger.d('GitHubService: Stored token from SharedPreferences: ${storedToken != null ? "exists" : "null"}');
       
       if (storedToken != null && storedToken.isNotEmpty) {
         _accessToken = storedToken;
-        LoggingService.success('GitHubService: Loaded stored GitHub token, length: ${storedToken.length}');
+        _logger.i('GitHubService: Loaded stored GitHub token, length: ${storedToken.length}');
         notifyListeners();
       } else {
-        LoggingService.warning('GitHubService: No stored token found or token is empty');
+        _logger.w('GitHubService: No stored token found or token is empty');
       }
     } catch (e) {
-      LoggingService.error('GitHubService: Error loading stored token: $e', e, StackTrace.current);
+      _logger.e('GitHubService: Error loading stored token: $e', error: e, stackTrace: StackTrace.current);
     }
   }
 
@@ -68,39 +69,39 @@ class GitHubService extends ChangeNotifier {
   }
 
   Future<bool> hasValidToken() async {
-    LoggingService.debug('GitHubService: hasValidToken called');
+    _logger.d('GitHubService: hasValidToken called');
     
     // Ensure token is loaded first
     if (_accessToken == null) {
-      LoggingService.debug('GitHubService: Token not loaded, loading now...');
+      _logger.d('GitHubService: Token not loaded, loading now...');
       await _loadStoredToken();
     }
     
-    LoggingService.debug('GitHubService: _accessToken is null: ${_accessToken == null}');
-    LoggingService.debug('GitHubService: _accessToken is empty: ${_accessToken?.isEmpty ?? true}');
+    _logger.d('GitHubService: _accessToken is null: ${_accessToken == null}');
+    _logger.d('GitHubService: _accessToken is empty: ${_accessToken?.isEmpty ?? true}');
     
     if (_accessToken == null || _accessToken!.isEmpty) {
-      LoggingService.warning('GitHubService: No token available, returning false');
+      _logger.w('GitHubService: No token available, returning false');
       return false;
     }
     
-    LoggingService.debug('GitHubService: Token exists, testing connection...');
+    _logger.d('GitHubService: Token exists, testing connection...');
     // Test if the stored token is still valid
     final isValid = await testConnection();
-    LoggingService.debug('GitHubService: Connection test result: $isValid');
+    _logger.d('GitHubService: Connection test result: $isValid');
     
     // If connection is valid, ensure Appwrite data exists
     if (isValid) {
       try {
         final userData = await getAuthenticatedUser();
         if (userData != null) {
-          LoggingService.debug('GitHubService: Got user data, ensuring Appwrite data exists');
+          _logger.d('GitHubService: Got user data, ensuring Appwrite data exists');
           // This will be called from the auth flow with access to Appwrite service
           // For now, just log that we have the user data
-          LoggingService.debug('GitHubService: User ${userData['login']} (ID: ${userData['id']}) authenticated');
+          _logger.d('GitHubService: User ${userData['login']} (ID: ${userData['id']}) authenticated');
         }
       } catch (e) {
-        LoggingService.debug('GitHubService: Error getting user data: $e');
+        _logger.d('GitHubService: Error getting user data: $e');
       }
     }
     
@@ -108,14 +109,14 @@ class GitHubService extends ChangeNotifier {
   }
 
     Future<bool> testConnection() async {
-    LoggingService.debug('GitHubService: testConnection called');
+    _logger.d('GitHubService: testConnection called');
     if (_accessToken == null) {
-      LoggingService.warning('GitHubService: No access token for connection test');
+      _logger.w('GitHubService: No access token for connection test');
       return false;
     }
 
     try {
-      LoggingService.debug('GitHubService: Making HTTP request to $_baseUrl/user');
+      _logger.d('GitHubService: Making HTTP request to $_baseUrl/user');
       
       final response = await http.get(
         Uri.parse('$_baseUrl/user'),
@@ -125,14 +126,14 @@ class GitHubService extends ChangeNotifier {
         },
       );
       
-      LoggingService.debug('GitHubService: Response status code: ${response.statusCode}');
-      LoggingService.debug('GitHubService: Response body: ${response.body}');
+      _logger.d('GitHubService: Response status code: ${response.statusCode}');
+      _logger.d('GitHubService: Response body: ${response.body}');
       
       final isValid = response.statusCode == 200;
-      LoggingService.debug('GitHubService: Connection test result: $isValid');
+      _logger.d('GitHubService: Connection test result: $isValid');
       return isValid;
     } catch (e) {
-      LoggingService.error('GitHubService: Connection test failed: $e', e, StackTrace.current);
+      _logger.e('GitHubService: Connection test failed: $e', error: e, stackTrace: StackTrace.current);
       return false;
     }
   }
@@ -389,11 +390,11 @@ class GitHubService extends ChangeNotifier {
       try {
         currentSha = await getFileSha(owner, repo, todoFileName);
         if (currentSha != null) {
-          LoggingService.debug('Found existing $todoFileName with SHA: $currentSha');
+          _logger.d('Found existing $todoFileName with SHA: $currentSha');
         }
       } catch (e) {
         // File doesn't exist yet, that's okay for creation
-        LoggingService.debug('$todoFileName does not exist yet, will create new file');
+        _logger.d('$todoFileName does not exist yet, will create new file');
       }
 
       final success = await createOrUpdateFile(
@@ -406,14 +407,14 @@ class GitHubService extends ChangeNotifier {
       );
 
       if (success) {
-        LoggingService.success('Successfully created/updated $todoFileName in $owner/$repo');
+        _logger.i('Successfully created/updated $todoFileName in $owner/$repo');
       } else {
-        LoggingService.error('Failed to create/update $todoFileName in $owner/$repo');
+        _logger.e('Failed to create/update $todoFileName in $owner/$repo');
       }
 
       return success;
     } catch (e) {
-      LoggingService.error('Error creating/updating TODO file: $e', e, StackTrace.current);
+      _logger.e('Error creating/updating TODO file: $e', error: e, stackTrace: StackTrace.current);
       return false;
     }
   }
@@ -514,19 +515,19 @@ class GitHubService extends ChangeNotifier {
   Future<void> ensureAppwriteDataExists() async {
     try {
       if (_accessToken == null || _accessToken!.isEmpty) {
-        LoggingService.debug('GitHubService: No token available for Appwrite check');
+        _logger.d('GitHubService: No token available for Appwrite check');
         return;
       }
       
       final userData = await getAuthenticatedUser();
       if (userData != null) {
-        LoggingService.debug('GitHubService: Got user data, ensuring Appwrite data exists');
+        _logger.d('GitHubService: Got user data, ensuring Appwrite data exists');
         // This will be called from the auth flow with access to Appwrite service
         // For now, just log that we have the user data
-        LoggingService.debug('GitHubService: User ${userData['login']} (ID: ${userData['id']}) authenticated');
+        _logger.d('GitHubService: User ${userData['login']} (ID: ${userData['id']}) authenticated');
       }
     } catch (e) {
-      LoggingService.debug('GitHubService: Error ensuring Appwrite data: $e');
+      _logger.d('GitHubService: Error ensuring Appwrite data: $e');
     }
   }
 }

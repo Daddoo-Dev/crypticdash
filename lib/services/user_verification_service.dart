@@ -1,14 +1,16 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'logging_service.dart';
-import 'appwrite_connection_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
+import 'package:logger/logger.dart';
 import 'github_service.dart';
+import 'revenuecat_service.dart';
 
-/// Service for verifying and managing user data in Appwrite
+/// Service for verifying and managing user data in Stripe
 /// This service works regardless of GitHub authentication status
 class UserVerificationService extends ChangeNotifier {
-  final AppwriteConnectionService _appwriteService;
   final GitHubService _githubService;
+  final StripeService _stripeService;
+  final _logger = Logger();
   
   // User state
   Map<String, dynamic>? _currentUserData;
@@ -22,9 +24,9 @@ class UserVerificationService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get verificationError => _verificationError;
   
-  UserVerificationService(this._appwriteService, this._githubService);
+  UserVerificationService(this._githubService, this._stripeService);
   
-  /// Verify user data in Appwrite - this is the main method called on app startup
+  /// Verify user data in Stripe - this is the main method called on app startup
   Future<bool> verifyUserData() async {
     if (_isLoading) return false;
     
@@ -32,13 +34,14 @@ class UserVerificationService extends ChangeNotifier {
     _verificationError = null;
     
     try {
-      LoggingService.debug('UserVerificationService: Starting Appwrite connection test...');
+      _logger.d('UserVerificationService: Starting Stripe connection test...');
       
-      // First, test Appwrite connection
-      final isConnected = await _appwriteService.testConnection();
+      // First, test Stripe connection
+      await _stripeService.initialize();
+      final isConnected = _stripeService.isInitialized;
       if (!isConnected) {
-        _verificationError = 'Failed to connect to Appwrite';
-        LoggingService.error('UserVerificationService: Appwrite connection failed');
+        _verificationError = 'Failed to connect to Stripe';
+        _logger.e('UserVerificationService: Stripe connection failed');
         return false;
       }
       
@@ -47,18 +50,18 @@ class UserVerificationService extends ChangeNotifier {
       
       if (hasValidToken) {
         // User is authenticated with GitHub, verify their data
-        LoggingService.debug('UserVerificationService: User has GitHub token, verifying data...');
+        _logger.d('UserVerificationService: User has GitHub token, verifying data...');
         return await _verifyAuthenticatedUser();
       } else {
         // User is not authenticated, but we can still check if they have data
         // This handles the case where user data exists but token expired
-        LoggingService.debug('UserVerificationService: No GitHub token, checking for existing data...');
+        _logger.d('UserVerificationService: No GitHub token, checking for existing data...');
         return await _checkForExistingData();
       }
       
     } catch (e, stackTrace) {
       _verificationError = 'Verification failed: $e';
-      LoggingService.error('UserVerificationService: Verification error: $e', e, stackTrace);
+      _logger.e('UserVerificationService: Verification error: $e', error: e, stackTrace: stackTrace);
       return false;
     } finally {
       _isLoading = false;
@@ -83,52 +86,45 @@ class UserVerificationService extends ChangeNotifier {
       final email = userData['email'];
       final displayName = userData['name'];
       
-      LoggingService.debug('UserVerificationService: Checking for user: $githubUsername (ID: $githubUserId)');
+      _logger.d('UserVerificationService: Checking for user: $githubUsername (ID: $githubUserId)');
       
-      // Check if user exists in Appwrite
-      final existingUser = await _appwriteService.checkUserExists(githubUserId);
+      // Check if user exists in Stripe
+      final existingUser = await _stripeService.getUserSubscriptionStatus(githubUserId.toString());
       
-      if (existingUser != null) {
-        // User exists, update last login and set current data
-        _currentUserData = existingUser;
+      if (existingUser == 'premium' || existingUser == 'free') {
+        // User exists, set current data
+        _currentUserData = {
+          'id': githubUserId,
+          'login': githubUsername,
+          'email': email,
+          'name': displayName,
+          'subscription_status': existingUser,
+        };
         _isVerified = true;
-        
-        // Update last login time
-        final appwriteUserId = existingUser['\$id'];
-        if (appwriteUserId != null) {
-          await _appwriteService.updateUserLastLogin(appwriteUserId);
-        }
-        
-        LoggingService.success('UserVerificationService: User verified successfully: ${existingUser['githubUsername']}');
+        _logger.i('UserVerificationService: User verified successfully: $githubUsername');
         return true;
       } else {
-        // User doesn't exist, create them
-        LoggingService.debug('UserVerificationService: Creating new user: $githubUsername');
+        // User doesn't exist, create them in Stripe
+        _logger.d('UserVerificationService: Creating new user in Stripe: $githubUsername');
         
-        final newUserId = await _appwriteService.createUser(
-          githubUserId: githubUserId,
-          githubUsername: githubUsername,
-          email: email,
-          displayName: displayName,
-        );
+        // For now, just set the user as verified since Stripe will handle customer creation
+        // when they actually try to make a purchase
+        _currentUserData = {
+          'id': githubUserId,
+          'login': githubUsername,
+          'email': email,
+          'name': displayName,
+          'subscription_status': 'free',
+        };
+        _isVerified = true;
+        _logger.i('UserVerificationService: User verified successfully: $githubUsername');
+        return true;
         
-        if (newUserId != null) {
-          // Get the newly created user data
-          final newUserData = await _appwriteService.checkUserExists(githubUserId);
-          if (newUserData != null) {
-            _currentUserData = newUserData;
-            _isVerified = true;
-            LoggingService.success('UserVerificationService: New user created and verified: $githubUsername');
-            return true;
-          }
-        }
-        
-        _verificationError = 'Failed to create new user';
-        return false;
+
       }
     } catch (e, stackTrace) {
       _verificationError = 'Failed to verify authenticated user: $e';
-      LoggingService.error('UserVerificationService: Error verifying authenticated user: $e', e, stackTrace);
+      _logger.e('UserVerificationService: Error verifying authenticated user: $e', error: e, stackTrace: stackTrace);
       return false;
     }
   }
@@ -139,13 +135,13 @@ class UserVerificationService extends ChangeNotifier {
       // This is a fallback for when users don't have a valid token
       // We could potentially store some identifier in local storage
       // For now, we'll just return false and let the user authenticate
-      LoggingService.debug('UserVerificationService: No authentication, user needs to sign in');
+      _logger.d('UserVerificationService: No authentication, user needs to sign in');
       // Return true to indicate verification is "successful" - user just needs to authenticate
       // This prevents the error screen from showing
       return true;
     } catch (e, stackTrace) {
       _verificationError = 'Failed to check for existing data: $e';
-      LoggingService.error('UserVerificationService: Error checking existing data: $e', e, stackTrace);
+      _logger.e('UserVerificationService: Error checking existing data: $e', error: e, stackTrace: stackTrace);
       return false;
     }
   }
@@ -174,5 +170,55 @@ class UserVerificationService extends ChangeNotifier {
   /// Refresh user verification (useful after authentication changes)
   Future<bool> refreshVerification() async {
     return await verifyUserData();
+  }
+
+  /// Open verification documentation or help
+  Future<bool> openVerificationHelp() async {
+    try {
+      _logger.d('UserVerificationService: Opening verification help...');
+      
+      // Open the project's documentation or help page
+      final helpUrl = Uri.parse('https://github.com/shawn/crypticdash');
+      final canLaunch = await canLaunchUrl(helpUrl);
+      
+      if (canLaunch) {
+        await launchUrl(helpUrl, mode: LaunchMode.externalApplication);
+        _logger.i('UserVerificationService: Opened verification help');
+        return true;
+      } else {
+        _logger.w('UserVerificationService: Cannot launch verification help URL');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('UserVerificationService: Failed to open verification help: $e');
+      return false;
+    }
+  }
+  
+  /// Get verification status summary as JSON
+  Map<String, dynamic> getVerificationSummary() {
+    try {
+      final summary = {
+        'isVerified': _isVerified,
+        'isLoading': _isLoading,
+        'hasError': _verificationError != null,
+        'error': _verificationError,
+        'userData': _currentUserData != null,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      
+      // Convert to JSON string and back to ensure it's valid JSON
+      final jsonString = jsonEncode(summary);
+      final parsedSummary = jsonDecode(jsonString) as Map<String, dynamic>;
+      
+      _logger.d('UserVerificationService: Generated verification summary');
+      return parsedSummary;
+    } catch (e) {
+      _logger.e('UserVerificationService: Failed to generate verification summary: $e');
+      return {
+        'error': 'Failed to generate summary: $e',
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    }
   }
 }

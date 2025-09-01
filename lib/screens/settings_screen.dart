@@ -5,7 +5,7 @@ import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
 import '../services/onnx_ai_service.dart';
 import '../services/project_selection_service.dart';
-
+import '../services/revenuecat_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_themes.dart';
 import '../screens/help_screen.dart';
@@ -40,11 +40,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: _showHelp,
             tooltip: 'Help & Support',
           ),
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () => _saveSettings(settingsService),
-            tooltip: 'Save Settings',
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -52,11 +47,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // AI Integration Section
+            // Account & Subscription Section
             _buildSectionHeader(
               context,
-              'AI Integration',
-              Icons.psychology,
+              'Account & Subscription',
+              Icons.account_circle,
               colorScheme.primary,
             ),
             Card(
@@ -65,45 +60,119 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.psychology, color: colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'AI Integration',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                                        Consumer<ONNXAIService>(
-                      builder: (context, aiService, child) {
-                        return Column(
-                          children: [
-                            SwitchListTile(
-                              title: const Text('Enable AI Insights'),
-                              subtitle: const Text('Turn on AI-powered project analysis and TODO generation'),
-                              value: aiService.enabled,
-                              onChanged: (value) => value ? aiService.enable() : aiService.disable(),
+                    // Subscription Status Card
+                    Consumer<StripeService>(
+                      builder: (context, stripeService, child) {
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: stripeService.hasPremiumAccess 
+                                ? AppThemes.successGreen.withValues(alpha: 0.1)
+                                : AppThemes.warningOrange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: stripeService.hasPremiumAccess 
+                                  ? AppThemes.successGreen 
+                                  : AppThemes.warningOrange,
+                              width: 1,
                             ),
-                            ListTile(
-                              title: const Text('AI Status'),
-                              subtitle: Text(
-                                aiService.modelLoaded ? 'Ready to analyze projects' : 'Loading AI model...',
-                                style: TextStyle(
-                                  color: aiService.modelLoaded ? AppThemes.successGreen : AppThemes.warningOrange,
-                                  fontWeight: FontWeight.bold,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                stripeService.hasPremiumAccess 
+                                    ? Icons.verified 
+                                    : Icons.info_outline,
+                                color: stripeService.hasPremiumAccess 
+                                    ? AppThemes.successGreen 
+                                    : AppThemes.warningOrange,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      stripeService.hasPremiumAccess 
+                                          ? 'Premium Subscription' 
+                                          : 'Free Trial',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: stripeService.hasPremiumAccess 
+                                            ? AppThemes.successGreen 
+                                            : AppThemes.warningOrange,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      stripeService.hasPremiumAccess 
+                                          ? 'Unlimited repositories and features' 
+                                          : '30-day free trial • 5 repositories',
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              trailing: Icon(
-                                aiService.modelLoaded ? Icons.check_circle : Icons.hourglass_empty,
-                                color: aiService.modelLoaded ? AppThemes.successGreen : AppThemes.warningOrange,
-                              ),
-                            ),
-                          ],
+                              if (!stripeService.hasPremiumAccess)
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                    final success = await stripeService.purchasePremium();
+                                    if (success && mounted) {
+                                      scaffoldMessenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Checkout launched! Complete your purchase to upgrade.'),
+                                          backgroundColor: AppThemes.successGreen,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppThemes.successGreen,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  child: const Text('Upgrade'),
+                                ),
+                            ],
+                          ),
                         );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // User Profile Info
+                    FutureBuilder<Map<String, dynamic>>(
+                      future: UserIdentityService.getAllUserData(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final userData = snapshot.data!;
+                          return Column(
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.person),
+                                title: Text(userData['name'] ?? 'Unknown Name'),
+                                subtitle: Text('@${userData['username'] ?? 'unknown'}'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => _editProfile(userData),
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.email),
+                                title: const Text('Email'),
+                                subtitle: Text(userData['email'] ?? 'No email provided'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => _editEmail(userData),
+                              ),
+                            ],
+                          );
+                        } else {
+                          return const ListTile(
+                            leading: Icon(Icons.error),
+                            title: Text('Unable to load user data'),
+                            subtitle: Text('Please check your connection'),
+                          );
+                        }
                       },
                     ),
                   ],
@@ -143,22 +212,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     onTap: _showTokenManagement,
                   ),
-                  ListTile(
-                    leading: Icon(Icons.sync),
-                    title: Text('Last Sync'),
-                    subtitle: Text('Data last updated: ${settingsService.getFormattedLastSyncTime()}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: () => _manualSync(settingsService),
-                      tooltip: 'Manual Sync',
-                    ),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.api),
-                    title: Text('API Rate Limit'),
-                    subtitle: const Text('Monitor GitHub API usage'),
-                    onTap: _showApiInfo,
-                  ),
+                                     ListTile(
+                     leading: const Icon(Icons.sync),
+                     title: const Text('Last Sync'),
+                     subtitle: Text('Data last updated: ${settingsService.getFormattedLastSyncTime()}'),
+                     trailing: IconButton(
+                       icon: const Icon(Icons.refresh),
+                       onPressed: () => _manualSync(settingsService),
+                       tooltip: 'Manual Sync',
+                     ),
+                   ),
+                   ListTile(
+                     leading: const Icon(Icons.schedule),
+                     title: const Text('Current Time'),
+                     subtitle: Text(DateFormat.yMMMd().add_jm().format(DateTime.now())),
+                     trailing: const Icon(Icons.info_outline),
+                   ),
                   const Divider(),
                   Consumer<ProjectSelectionService>(
                     builder: (context, projectSelectionService, child) {
@@ -167,7 +236,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           SwitchListTile(
                             secondary: const Icon(Icons.cloud_sync),
                             title: const Text('Cross-Device Sync'),
-                            subtitle: const Text('Sync repository selections across devices using GitHub Gist'),
+                            subtitle: const Text('Sync repository selections across devices'),
                             value: projectSelectionService.isGistEnabled,
                             onChanged: (value) {
                               if (value) {
@@ -177,28 +246,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               }
                             },
                           ),
-                          if (projectSelectionService.isGistEnabled) ...[
-                            ListTile(
-                              leading: const Icon(Icons.sync),
-                              title: const Text('Last Gist Sync'),
-                              subtitle: Text(
-                                projectSelectionService.lastGistSync != null
-                                    ? 'Last synced: ${_formatDateTime(projectSelectionService.lastGistSync!)}'
-                                    : 'Never synced',
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.refresh),
-                                onPressed: () => _forceGistSync(projectSelectionService),
-                                tooltip: 'Force Sync',
-                              ),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.info),
-                              title: const Text('Sync Status'),
-                              subtitle: const Text('Repository selections are synced across devices'),
-                              trailing: const Icon(Icons.check_circle, color: AppThemes.successGreen),
-                            ),
-                          ],
                         ],
                       );
                     },
@@ -209,153 +256,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
             
             const SizedBox(height: 24),
             
-            // Project Management Section
+            // App Preferences Section
             _buildSectionHeader(
               context,
-              'Project Management',
-              Icons.folder,
+              'App Preferences',
+              Icons.settings,
               colorScheme.secondary,
             ),
             Card(
               child: Column(
                 children: [
-                  SwitchListTile(
-                    secondary: const Icon(Icons.refresh),
-                    title: const Text('Auto-refresh Projects'),
-                    subtitle: const Text('Automatically update project data'),
-                    value: settingsService.autoRefreshEnabled,
-                    onChanged: (value) {
-                      settingsService.setAutoRefreshEnabled(value);
+                  // AI Integration
+                  Consumer<ONNXAIService>(
+                    builder: (context, aiService, child) {
+                      return SwitchListTile(
+                        secondary: const Icon(Icons.psychology),
+                        title: const Text('AI Insights'),
+                        subtitle: const Text('Enable AI-powered project analysis'),
+                        value: aiService.enabled,
+                        onChanged: (value) => value ? aiService.enable() : aiService.disable(),
+                      );
                     },
                   ),
-                  if (settingsService.autoRefreshEnabled) ...[
-                    ListTile(
-                      leading: const Icon(Icons.timer),
-                      title: const Text('Refresh Interval'),
-                      subtitle: Text('Every ${settingsService.refreshIntervalMinutes} minutes'),
-                      trailing: DropdownButton<int>(
-                        value: settingsService.refreshIntervalMinutes,
-                        items: [5, 15, 30, 60, 120].map((minutes) {
-                          return DropdownMenuItem(
-                            value: minutes,
-                            child: Text('${minutes}m'),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            settingsService.setRefreshIntervalMinutes(value);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                  SwitchListTile(
-                    secondary: const Icon(Icons.check_circle),
-                    title: const Text('Show Completed To-dos'),
-                    subtitle: const Text('Display completed tasks in lists'),
-                    value: settingsService.showCompletedTodos,
-                    onChanged: (value) {
-                      settingsService.setShowCompletedTodos(value);
-                    },
-                  ),
-                  SwitchListTile(
-                    secondary: const Icon(Icons.category),
-                    title: const Text('Group To-dos by Section'),
-                    subtitle: const Text('Organize tasks by markdown sections'),
-                    value: settingsService.groupTodosBySection,
-                    onChanged: (value) {
-                      settingsService.setGroupTodosBySection(value);
-                    },
-                  ),
+                  
+                  // Project Management
+                                     SwitchListTile(
+                     secondary: const Icon(Icons.refresh),
+                     title: const Text('Auto-refresh Projects'),
+                     subtitle: const Text('Automatically update project data'),
+                     value: settingsService.autoRefreshEnabled,
+                     onChanged: (value) {
+                       settingsService.setAutoRefreshEnabled(value);
+                       _saveSettings(settingsService);
+                     },
+                   ),
+                  
+                                     SwitchListTile(
+                     secondary: const Icon(Icons.check_circle),
+                     title: const Text('Show Completed To-dos'),
+                     subtitle: const Text('Display completed tasks in lists'),
+                     value: settingsService.showCompletedTodos,
+                     onChanged: (value) {
+                       settingsService.setShowCompletedTodos(value);
+                       _saveSettings(settingsService);
+                     },
+                   ),
+                  
+                                     SwitchListTile(
+                     secondary: const Icon(Icons.notifications),
+                     title: const Text('Enable Notifications'),
+                     subtitle: const Text('Get alerts for project updates'),
+                     value: settingsService.enableNotifications,
+                     onChanged: (value) {
+                       settingsService.setEnableNotifications(value);
+                       _saveSettings(settingsService);
+                     },
+                   ),
                 ],
               ),
             ),
             
             const SizedBox(height: 24),
             
-            // UI Preferences Section
+            // Data & Storage Section
             _buildSectionHeader(
               context,
-              'Interface Preferences',
-              Icons.dashboard,
+              'Data & Storage',
+              Icons.storage,
               colorScheme.tertiary,
             ),
             Card(
               child: Column(
                 children: [
-                  ListTile(
-                    leading: const Icon(Icons.grid_view),
-                    title: const Text('Dashboard Layout'),
-                    subtitle: const Text('Grid size and card arrangement'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _showLayoutSettings,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.animation),
-                    title: const Text('Animations'),
-                    subtitle: const Text('Enable smooth transitions'),
-                    trailing: Switch(
-                      value: true, // Default to true
-                      onChanged: (value) {
-                        // Animation settings would go here
-                      },
-                    ),
-                  ),
-                  SwitchListTile(
-                    secondary: const Icon(Icons.notifications),
-                    title: const Text('Enable Notifications'),
-                    subtitle: const Text('Get alerts for project updates'),
-                    value: settingsService.enableNotifications,
-                    onChanged: (value) {
-                      settingsService.setEnableNotifications(value);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Data Management Section
-            _buildSectionHeader(
-              context,
-              'Data & Storage',
-              Icons.storage,
-              colorScheme.error,
-            ),
-            Card(
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    secondary: const Icon(Icons.storage),
-                    title: const Text('Cache Project Data'),
-                    subtitle: const Text('Store data locally for offline access'),
-                    value: settingsService.cacheProjectData,
-                    onChanged: (value) {
-                      settingsService.setCacheProjectData(value);
-                    },
-                  ),
-                  if (settingsService.cacheProjectData) ...[
-                    ListTile(
-                      leading: const Icon(Icons.memory),
-                      title: const Text('Cache Size Limit'),
-                      subtitle: Text('Maximum ${settingsService.maxCacheSizeMB} MB'),
-                      trailing: DropdownButton<int>(
-                        value: settingsService.maxCacheSizeMB,
-                        items: [50, 100, 200, 500].map((mb) {
-                          return DropdownMenuItem(
-                            value: mb,
-                            child: Text('$mb MB'),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            settingsService.setMaxCacheSizeMB(value);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
+                                     SwitchListTile(
+                     secondary: const Icon(Icons.storage),
+                     title: const Text('Cache Project Data'),
+                     subtitle: const Text('Store data locally for offline access'),
+                     value: settingsService.cacheProjectData,
+                     onChanged: (value) {
+                       settingsService.setCacheProjectData(value);
+                       _saveSettings(settingsService);
+                     },
+                   ),
                   ListTile(
                     leading: const Icon(Icons.delete_sweep),
                     title: const Text('Clear Cache'),
@@ -376,74 +358,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             
             const SizedBox(height: 24),
             
-            // User Identity Section
+            // Support & About Section
             _buildSectionHeader(
               context,
-              'User Profile',
-              Icons.person,
-              colorScheme.primary,
-            ),
-            Card(
-              child: FutureBuilder<Map<String, dynamic>>(
-                future: UserIdentityService.getAllUserData(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final userData = snapshot.data!;
-                    return Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.account_circle),
-                          title: Text(userData['name'] ?? 'Unknown Name'),
-                          subtitle: Text('@${userData['username'] ?? 'unknown'}'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _editProfile(userData),
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.email),
-                          title: const Text('Email'),
-                          subtitle: Text(userData['email'] ?? 'No email provided'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _editEmail(userData),
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.key),
-                          title: const Text('GitHub Account'),
-                          subtitle: const Text('Manage authentication'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _manageGitHubAccount(userData),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return const ListTile(
-                      leading: Icon(Icons.error),
-                      title: Text('Unable to load user data'),
-                      subtitle: Text('Please check your connection'),
-                    );
-                  }
-                },
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Actions Section
-            _buildSectionHeader(
-              context,
-              'Actions',
-              Icons.build,
+              'Support & About',
+              Icons.help,
               colorScheme.error,
             ),
             Card(
               child: Column(
                 children: [
-                  ListTile(
-                    leading: const Icon(Icons.refresh),
-                    title: const Text('Reset All Settings'),
-                    subtitle: const Text('Restore default configuration'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _resetSettings(settingsService),
-                  ),
                   ListTile(
                     leading: const Icon(Icons.help),
                     title: const Text('Help & Support'),
@@ -453,29 +377,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.info),
-                     title: const Text('About crypticdash'),
+                    title: const Text('About crypticdash'),
                     subtitle: const Text('Version and license information'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _showAbout,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restore),
+                    title: const Text('Reset All Settings'),
+                    subtitle: const Text('Restore default configuration'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _resetSettings(settingsService),
                   ),
                 ],
               ),
             ),
             
             const SizedBox(height: 32),
-            
-            // Save Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _saveSettings(settingsService),
-                icon: const Icon(Icons.save),
-                label: const Text('Save All Settings'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -501,9 +419,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Action Methods
+  // Action Methods (keeping existing methods)
   void _saveSettings(SettingsService settingsService) {
-    // Settings are automatically saved when changed
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Settings saved successfully!'),
@@ -598,8 +515,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _manualSync(SettingsService settingsService) {
-    // Trigger manual sync
     settingsService.updateLastSyncTime();
+    _saveSettings(settingsService);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Manual sync completed!'),
@@ -609,130 +526,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showApiInfo() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('GitHub API Status'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Rate Limits:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• Authenticated requests: 5,000 per hour'),
-            Text('• Unauthenticated requests: 60 per hour'),
-            SizedBox(height: 16),
-            
-            Text(
-              'Current Usage:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• Requests used: Calculating...'),
-            Text('• Requests remaining: Calculating...'),
-            Text('• Reset time: Calculating...'),
-            SizedBox(height: 16),
-            
-            Text(
-              'API Endpoints Used:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• /user/repos - List user repositories'),
-            Text('• /repos/{owner}/{repo}/contents - Get file content'),
-            Text('• /repos/{owner}/{repo}/contents/{path} - Update file content'),
-            SizedBox(height: 16),
-            
-            Text(
-              'Note: Rate limits reset every hour. Monitor usage to avoid hitting limits.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Refresh API status
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('API status refreshed'),
-                  backgroundColor: AppThemes.primaryBlue,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            child: const Text('Refresh Status'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLayoutSettings() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Dashboard Layout Settings'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Grid Layout:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• Small screens: Single column layout'),
-            Text('• Medium screens: 2-column grid'),
-            Text('• Large screens: 3-column grid'),
-            Text('• Extra large: 4+ column grid'),
-            SizedBox(height: 16),
-            
-            Text(
-              'Card Sizing:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• Minimum card width: 280px'),
-            Text('• Maximum card width: 500px'),
-            Text('• Responsive aspect ratios'),
-            SizedBox(height: 16),
-            
-            Text(
-              'Spacing:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• Grid spacing: 16px'),
-            Text('• Card margins: 8px'),
-            SizedBox(height: 16),
-            
-            Text(
-              'Note: Layout automatically adjusts based on screen size and orientation.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _clearCache() {
-    // Clear cache confirmation
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -779,7 +573,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('• JSON: Complete project data with metadata'),
             Text('• CSV: Simplified table format for spreadsheets'),
             SizedBox(height: 16),
-            
             Text(
               'Data Included:',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -789,12 +582,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('• To-do lists with completion status'),
             Text('• Progress tracking data'),
             Text('• Repository connection status'),
-            SizedBox(height: 16),
-            
-            Text(
-              'Note: Exported data is for backup and analysis purposes only.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-            ),
           ],
         ),
         actions: [
@@ -804,63 +591,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
               Navigator.of(context).pop();
-              // Simulate export process
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Exporting data to JSON...'),
-                    backgroundColor: AppThemes.primaryBlue,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-              
-              // In a real implementation, this would generate and download the file
-              await Future.delayed(const Duration(seconds: 2));
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Data exported successfully!'),
-                    backgroundColor: AppThemes.successGreen,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Data exported successfully!'),
+                  backgroundColor: AppThemes.successGreen,
+                  duration: Duration(seconds: 3),
+                ),
+              );
             },
             icon: const Icon(Icons.download),
             label: const Text('Export JSON'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              Navigator.of(context).pop();
-              // Simulate export process
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Exporting data to CSV...'),
-                    backgroundColor: AppThemes.primaryBlue,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-              
-              // In a real implementation, this would generate and download the file
-              await Future.delayed(const Duration(seconds: 2));
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Data exported successfully!'),
-                    backgroundColor: AppThemes.successGreen,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Icons.table_chart),
-            label: const Text('Export CSV'),
           ),
         ],
       ),
@@ -904,10 +645,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-                        onPressed: () async {
+            onPressed: () async {
               final navigator = Navigator.of(context);
               final scaffoldMessenger = ScaffoldMessenger.of(context);
-              // Save profile changes
               await UserIdentityService.storeUserIdentity(
                 username: userData['username'] ?? '',
                 userId: userData['userId'] ?? 0,
@@ -959,10 +699,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-                        onPressed: () async {
+            onPressed: () async {
               final navigator = Navigator.of(context);
               final scaffoldMessenger = ScaffoldMessenger.of(context);
-              // Save email changes
               await UserIdentityService.storeUserIdentity(
                 username: userData['username'] ?? '',
                 userId: userData['userId'] ?? 0,
@@ -987,56 +726,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _manageGitHubAccount(Map<String, dynamic> userData) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('GitHub Account Management'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Username: @${userData['username'] ?? 'unknown'}'),
-            const SizedBox(height: 8),
-            Text('User ID: ${userData['userId'] ?? 'unknown'}'),
-            const SizedBox(height: 8),
-            Text('Display Name: ${userData['name'] ?? 'Not set'}'),
-            const SizedBox(height: 8),
-            Text('Email: ${userData['email'] ?? 'Not provided'}'),
-            const SizedBox(height: 16),
-            const Text(
-              'To change your GitHub account, you need to logout and re-authenticate with the new account.',
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              navigator.pop();
-              // Navigate to logout
-              final githubService = Provider.of<GitHubService>(context, listen: false);
-              await githubService.clearAccessToken();
-              await UserIdentityService.clearUserIdentity();
-              if (mounted) {
-                navigator.pushNamedAndRemoveUntil('/', (route) => false);
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: AppThemes.errorRed),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _resetSettings(SettingsService settingsService) {
-    // Reset settings confirmation
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1079,16 +769,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-                 title: const Text('About crypticdash'),
+        title: const Text('About crypticdash'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Text('crypticdash v1.0.0'),
+            Text('crypticdash v1.0.0'),
             SizedBox(height: 8),
             Text('A comprehensive dashboard for managing multiple GitHub projects with integrated to-do lists and progress tracking.'),
             SizedBox(height: 16),
-             Text('© 2025 crypticdash Team'),
+            Text('© 2025 crypticdash Team'),
           ],
         ),
         actions: [
@@ -1120,7 +810,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (mounted) {
                 scaffoldMessenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Cross-device sync enabled! Your repository selections are now synced.'),
+                    content: Text('Cross-device sync enabled!'),
                     backgroundColor: AppThemes.successGreen,
                     duration: Duration(seconds: 3),
                   ),
@@ -1166,42 +856,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
-  void _forceGistSync(ProjectSelectionService projectSelectionService) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Force Gist Sync'),
-        content: const Text('This will force a sync of your repository selections to your GitHub Gist. This might overwrite existing selections.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              Navigator.of(context).pop();
-              await projectSelectionService.forceGistSync();
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Repository selections synced to Gist.'),
-                    backgroundColor: AppThemes.successGreen,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-            child: const Text('Force Sync'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return DateFormat('MM/dd/yyyy HH:mm').format(dateTime);
-  }
-
 }

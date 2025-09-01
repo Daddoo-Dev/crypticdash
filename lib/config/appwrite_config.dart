@@ -1,10 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Stripe Configuration
+/// Stripe Configuration (Replacing Appwrite)
 /// 
-/// This class provides access to Stripe configuration values
-/// API keys are loaded from environment variables at runtime
+/// This class provides centralized access to Stripe configuration values
+/// to avoid duplication across multiple services
 class StripeConfig {
   // Stripe API Keys
   static String get _stripePublicKey => dotenv.env['STRIPE_SANDBOX_PUBLIC_KEY'] ?? '';
@@ -27,15 +26,6 @@ class StripeConfig {
   // Check if configuration is valid
   static bool get isConfigured {
     return _stripePublicKey.isNotEmpty && _stripeSecretKey.isNotEmpty;
-  }
-  
-  // Platform-specific configuration
-  static String get platformSpecificKey {
-    if (kIsWeb) {
-      return _stripePublicKey; // Web uses publishable key
-    } else {
-      return _stripePublicKey; // Mobile also uses publishable key
-    }
   }
   
   // Validation methods

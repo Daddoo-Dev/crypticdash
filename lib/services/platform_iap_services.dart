@@ -1,7 +1,11 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:logger/logger.dart';
+import '../config/revenuecat_config.dart';
 import 'iap_service.dart';
 
 /// Windows Store Service using Microsoft Store Services
@@ -87,24 +91,44 @@ class WindowsStoreService implements PlatformIAPService {
   }
 }
 
-/// macOS App Store Service using RevenueCat
+/// macOS App Store Service using Stripe
 class MacOSStoreService implements PlatformIAPService {
+  final _logger = Logger();
+  static const String _stripeApiUrl = 'https://api.stripe.com/v1';
   
   @override
   Future<bool> purchaseProduct(String productId) async {
     try {
       if (Platform.isMacOS) {
-        // Use RevenueCat for macOS
-        final offerings = await Purchases.getOfferings();
-        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-          final package = offerings.current!.availablePackages.first;
-          final customerInfo = await Purchases.purchasePackage(package);
-          return customerInfo.entitlements.active.containsKey('premium');
+        // Create Stripe Checkout Session for macOS
+        final response = await http.post(
+          Uri.parse('$_stripeApiUrl/checkout/sessions'),
+          headers: {
+            'Authorization': 'Bearer ${StripeConfig.secretKey}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: {
+            'payment_method_types[]': 'card',
+            'line_items[0][price]': StripeConfig.premiumPriceId,
+            'mode': 'subscription',
+            'success_url': 'https://crypticdash.com/success',
+            'cancel_url': 'https://crypticdash.com/cancel',
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          final sessionData = jsonDecode(response.body);
+          final checkoutUrl = sessionData['url'];
+          
+          if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
+            await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+            return true;
+          }
         }
       }
       return false;
     } catch (e) {
-      debugPrint('macOS Store purchase error: $e');
+      _logger.e('macOS Stripe purchase error: $e');
       return false;
     }
   }
@@ -113,12 +137,14 @@ class MacOSStoreService implements PlatformIAPService {
   Future<bool> restorePurchases() async {
     try {
       if (Platform.isMacOS) {
-        final customerInfo = await Purchases.restorePurchases();
-        return customerInfo.entitlements.active.containsKey('premium');
+        // For Stripe, we check subscription status via API
+        // This would typically be done through the main Stripe service
+        _logger.i('macOS Stripe restore - check subscription status via main service');
+        return false; // Let main service handle this
       }
       return false;
     } catch (e) {
-      debugPrint('macOS Store restore error: $e');
+      _logger.e('macOS Stripe restore error: $e');
       return false;
     }
   }
@@ -127,12 +153,14 @@ class MacOSStoreService implements PlatformIAPService {
   Future<bool> hasActiveSubscription(String productId) async {
     try {
       if (Platform.isMacOS) {
-        final customerInfo = await Purchases.getCustomerInfo();
-        return customerInfo.entitlements.active.containsKey('premium');
+        // Check subscription status via Stripe API
+        // This would typically be done through the main Stripe service
+        _logger.i('macOS Stripe subscription check - use main service');
+        return false; // Let main service handle this
       }
       return false;
     } catch (e) {
-      debugPrint('macOS Store subscription check error: $e');
+      _logger.e('macOS Stripe subscription check error: $e');
       return false;
     }
   }
@@ -141,51 +169,65 @@ class MacOSStoreService implements PlatformIAPService {
   Future<ProductDetails?> getProductDetails(String productId) async {
     try {
       if (Platform.isMacOS) {
-        final offerings = await Purchases.getOfferings();
-        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-          final package = offerings.current!.availablePackages.first;
-          final storeProduct = package.storeProduct;
-          
-          return ProductDetails(
-            id: storeProduct.identifier,
-            title: storeProduct.title,
-            description: storeProduct.description,
-            price: storeProduct.priceString,
-            currencyCode: storeProduct.currencyCode,
-          );
-        }
+        return ProductDetails(
+          id: StripeConfig.premiumProductId,
+          title: StripeConfig.productName,
+          description: StripeConfig.productDescription,
+          price: StripeConfig.productPrice,
+          currencyCode: 'USD',
+        );
       }
       return null;
     } catch (e) {
-      debugPrint('macOS Store product details error: $e');
+      _logger.e('macOS Stripe product details error: $e');
       return null;
     }
   }
   
   @override
   void dispose() {
-    // RevenueCat handles cleanup automatically
+    // No cleanup needed for Stripe
   }
 }
 
-/// iOS App Store Service using RevenueCat
+/// iOS App Store Service using Stripe
 class IOSStoreService implements PlatformIAPService {
+  final _logger = Logger();
+  static const String _stripeApiUrl = 'https://api.stripe.com/v1';
   
   @override
   Future<bool> purchaseProduct(String productId) async {
     try {
       if (Platform.isIOS) {
-        // Use RevenueCat for iOS
-        final offerings = await Purchases.getOfferings();
-        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-          final package = offerings.current!.availablePackages.first;
-          final customerInfo = await Purchases.purchasePackage(package);
-          return customerInfo.entitlements.active.containsKey('premium');
+        // Create Stripe Checkout Session for iOS
+        final response = await http.post(
+          Uri.parse('$_stripeApiUrl/checkout/sessions'),
+          headers: {
+            'Authorization': 'Bearer ${StripeConfig.secretKey}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: {
+            'payment_method_types[]': 'card',
+            'line_items[0][price]': StripeConfig.premiumPriceId,
+            'mode': 'subscription',
+            'success_url': 'https://crypticdash.com/success',
+            'cancel_url': 'https://crypticdash.com/cancel',
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          final sessionData = jsonDecode(response.body);
+          final checkoutUrl = sessionData['url'];
+          
+          if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
+            await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+            return true;
+          }
         }
       }
       return false;
     } catch (e) {
-      debugPrint('iOS Store purchase error: $e');
+      _logger.e('iOS Stripe purchase error: $e');
       return false;
     }
   }
@@ -194,12 +236,13 @@ class IOSStoreService implements PlatformIAPService {
   Future<bool> restorePurchases() async {
     try {
       if (Platform.isIOS) {
-        final customerInfo = await Purchases.restorePurchases();
-        return customerInfo.entitlements.active.containsKey('premium');
+        // For Stripe, we check subscription status via API
+        _logger.i('iOS Stripe restore - check subscription status via main service');
+        return false; // Let main service handle this
       }
       return false;
     } catch (e) {
-      debugPrint('iOS Store restore error: $e');
+      _logger.e('iOS Stripe restore error: $e');
       return false;
     }
   }
@@ -208,12 +251,13 @@ class IOSStoreService implements PlatformIAPService {
   Future<bool> hasActiveSubscription(String productId) async {
     try {
       if (Platform.isIOS) {
-        final customerInfo = await Purchases.getCustomerInfo();
-        return customerInfo.entitlements.active.containsKey('premium');
+        // Check subscription status via Stripe API
+        _logger.i('iOS Stripe subscription check - use main service');
+        return false; // Let main service handle this
       }
       return false;
     } catch (e) {
-      debugPrint('iOS Store subscription check error: $e');
+      _logger.e('iOS Stripe subscription check error: $e');
       return false;
     }
   }
@@ -222,51 +266,65 @@ class IOSStoreService implements PlatformIAPService {
   Future<ProductDetails?> getProductDetails(String productId) async {
     try {
       if (Platform.isIOS) {
-        final offerings = await Purchases.getOfferings();
-        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-          final package = offerings.current!.availablePackages.first;
-          final storeProduct = package.storeProduct;
-          
-          return ProductDetails(
-            id: storeProduct.identifier,
-            title: storeProduct.title,
-            description: storeProduct.description,
-            price: storeProduct.priceString,
-            currencyCode: storeProduct.currencyCode,
-          );
-        }
+        return ProductDetails(
+          id: StripeConfig.premiumProductId,
+          title: StripeConfig.productName,
+          description: StripeConfig.productDescription,
+          price: StripeConfig.productPrice,
+          currencyCode: 'USD',
+        );
       }
       return null;
     } catch (e) {
-      debugPrint('iOS Store product details error: $e');
+      _logger.e('iOS Stripe product details error: $e');
       return null;
     }
   }
   
   @override
   void dispose() {
-    // RevenueCat handles cleanup automatically
+    // No cleanup needed for Stripe
   }
 }
 
-/// Android Google Play Store Service using RevenueCat
+/// Android Google Play Store Service using Stripe
 class AndroidStoreService implements PlatformIAPService {
+  final _logger = Logger();
+  static const String _stripeApiUrl = 'https://api.stripe.com/v1';
   
   @override
   Future<bool> purchaseProduct(String productId) async {
     try {
       if (Platform.isAndroid) {
-        // Use RevenueCat for Android
-        final offerings = await Purchases.getOfferings();
-        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-          final package = offerings.current!.availablePackages.first;
-          final customerInfo = await Purchases.purchasePackage(package);
-          return customerInfo.entitlements.active.containsKey('premium');
+        // Create Stripe Checkout Session for Android
+        final response = await http.post(
+          Uri.parse('$_stripeApiUrl/checkout/sessions'),
+          headers: {
+            'Authorization': 'Bearer ${StripeConfig.secretKey}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: {
+            'payment_method_types[]': 'card',
+            'line_items[0][price]': StripeConfig.premiumPriceId,
+            'mode': 'subscription',
+            'success_url': 'https://crypticdash.com/success',
+            'cancel_url': 'https://crypticdash.com/cancel',
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          final sessionData = jsonDecode(response.body);
+          final checkoutUrl = sessionData['url'];
+          
+          if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
+            await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+            return true;
+          }
         }
       }
       return false;
     } catch (e) {
-      debugPrint('Android Store purchase error: $e');
+      _logger.e('Android Stripe purchase error: $e');
       return false;
     }
   }
@@ -275,12 +333,13 @@ class AndroidStoreService implements PlatformIAPService {
   Future<bool> restorePurchases() async {
     try {
       if (Platform.isAndroid) {
-        final customerInfo = await Purchases.restorePurchases();
-        return customerInfo.entitlements.active.containsKey('premium');
+        // For Stripe, we check subscription status via API
+        _logger.i('Android Stripe restore - check subscription status via main service');
+        return false; // Let main service handle this
       }
       return false;
     } catch (e) {
-      debugPrint('Android Store restore error: $e');
+      _logger.e('Android Stripe restore error: $e');
       return false;
     }
   }
@@ -289,12 +348,13 @@ class AndroidStoreService implements PlatformIAPService {
   Future<bool> hasActiveSubscription(String productId) async {
     try {
       if (Platform.isAndroid) {
-        final customerInfo = await Purchases.getCustomerInfo();
-        return customerInfo.entitlements.active.containsKey('premium');
+        // Check subscription status via Stripe API
+        _logger.i('Android Stripe subscription check - use main service');
+        return false; // Let main service handle this
       }
       return false;
     } catch (e) {
-      debugPrint('Android Store subscription check error: $e');
+      _logger.e('Android Stripe subscription check error: $e');
       return false;
     }
   }
@@ -303,30 +363,24 @@ class AndroidStoreService implements PlatformIAPService {
   Future<ProductDetails?> getProductDetails(String productId) async {
     try {
       if (Platform.isAndroid) {
-        final offerings = await Purchases.getOfferings();
-        if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-          final package = offerings.current!.availablePackages.first;
-          final storeProduct = package.storeProduct;
-          
-          return ProductDetails(
-            id: storeProduct.identifier,
-            title: storeProduct.title,
-            description: storeProduct.description,
-            price: storeProduct.priceString,
-            currencyCode: storeProduct.currencyCode,
-          );
-        }
+        return ProductDetails(
+          id: StripeConfig.premiumProductId,
+          title: StripeConfig.productName,
+          description: StripeConfig.productDescription,
+          price: StripeConfig.productPrice,
+          currencyCode: 'USD',
+        );
       }
       return null;
     } catch (e) {
-      debugPrint('Android Store product details error: $e');
+      _logger.e('Android Stripe product details error: $e');
       return null;
     }
   }
   
   @override
   void dispose() {
-    // RevenueCat handles cleanup automatically
+    // No cleanup needed for Stripe
   }
 }
 
@@ -356,12 +410,12 @@ class MockStoreService implements PlatformIAPService {
   @override
   Future<ProductDetails?> getProductDetails(String productId) async {
     debugPrint('Mock Store: Product details for $productId');
-    // Return mock product details for testing
-    return const ProductDetails(
-      id: 'crypticdash_premium_yearly',
-      title: 'Premium Subscription (Mock)',
-      description: 'Unlimited repositories with AI features - Mock Store',
-      price: '\$9.99',
+    // Return Stripe-based product details for testing
+    return ProductDetails(
+      id: StripeConfig.premiumProductId,
+      title: StripeConfig.productName,
+      description: StripeConfig.productDescription,
+      price: StripeConfig.productPrice,
       currencyCode: 'USD',
     );
   }

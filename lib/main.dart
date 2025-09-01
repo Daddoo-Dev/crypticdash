@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:logger/logger.dart';
 import 'services/github_service.dart';
 import 'services/project_service.dart';
 import 'services/theme_service.dart';
 import 'services/project_selection_service.dart';
 import 'services/settings_service.dart';
-import 'services/logging_service.dart';
-import 'services/revenuecat_config_service.dart';
+import 'services/revenuecat_service.dart';
 import 'services/iap_service.dart';
 import 'services/repo_tracking_service.dart';
-import 'services/appwrite_auth_service.dart';
-import 'services/appwrite_connection_service.dart';
+import 'services/stripe_user_service.dart';
 import 'services/user_verification_service.dart';
-
 import 'services/app_flow_service.dart';
 import 'services/onnx_ai_service.dart';
-
 import 'theme/app_themes.dart';
+
+// Global logger instance
+final logger = Logger();
 
 void main() async {
   // Disable mouse tracking to prevent crashes
@@ -26,19 +26,14 @@ void main() async {
   // Load environment variables
   try {
     await dotenv.load(fileName: '.env');
-    LoggingService.success('Successfully loaded .env file');
+    logger.i('Successfully loaded .env file');
   } catch (e) {
-    LoggingService.warning('Failed to load .env file: $e');
+    logger.w('Failed to load .env file: $e');
     // Continue without .env file
   }
   
-  // Initialize RevenueCat for supported platforms
-  try {
-    await RevenueCatConfigService.initialize();
-  } catch (e) {
-    LoggingService.warning('RevenueCat initialization failed: $e');
-    // Continue without RevenueCat
-  }
+  // Stripe service will be initialized through the provider system
+  logger.i('Stripe service will be initialized through providers');
   
   runApp(const CrypticDashApp());
 }
@@ -62,59 +57,74 @@ class CrypticDashApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => SettingsService(),
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProvider<StripeService>(
           create: (context) {
-            LoggingService.debug('Main: Creating AppwriteConnectionService...');
-            final connectionService = AppwriteConnectionService();
-            LoggingService.debug('Main: AppwriteConnectionService created successfully');
-            return connectionService;
+            final stripeService = StripeService();
+            // Initialize the service
+            stripeService.initialize();
+            return stripeService;
           },
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<StripeService, StripeUserService>(
           create: (context) {
-            LoggingService.debug('Main: Creating AppwriteAuthService...');
-            final authService = AppwriteAuthService();
-            LoggingService.debug('Main: AppwriteAuthService created successfully');
-            return authService;
+            logger.d('Main: Creating StripeUserService...');
+            final userService = StripeUserService();
+            final stripeService = Provider.of<StripeService>(context, listen: false);
+            
+            // Connect the services
+            userService.setStripeService(stripeService);
+            
+            logger.d('Main: StripeUserService created successfully');
+            return userService;
+          },
+          update: (context, stripeService, previous) {
+            if (previous != null) {
+              previous.setStripeService(stripeService);
+              return previous;
+            }
+            final userService = StripeUserService();
+            userService.setStripeService(stripeService);
+            return userService;
           },
         ),
-        ChangeNotifierProxyProvider2<AppwriteConnectionService, GitHubService, UserVerificationService>(
+        ChangeNotifierProxyProvider<GitHubService, UserVerificationService>(
           create: (context) {
-            LoggingService.debug('Main: Creating UserVerificationService...');
-            final connectionService = Provider.of<AppwriteConnectionService>(context, listen: false);
+            logger.d('Main: Creating UserVerificationService...');
             final githubService = Provider.of<GitHubService>(context, listen: false);
-            final verificationService = UserVerificationService(connectionService, githubService);
-            LoggingService.debug('Main: UserVerificationService created successfully');
+            final stripeService = Provider.of<StripeService>(context, listen: false);
+            final verificationService = UserVerificationService(githubService, stripeService);
+            logger.d('Main: UserVerificationService created successfully');
             return verificationService;
           },
-          update: (context, connectionService, githubService, previous) {
+          update: (context, githubService, previous) {
             if (previous != null) {
-              LoggingService.debug('Main: Updating UserVerificationService...');
+              logger.d('Main: Updating UserVerificationService...');
               return previous;
             }
-            LoggingService.debug('Main: Creating new UserVerificationService in update...');
-            return UserVerificationService(connectionService, githubService);
+            logger.d('Main: Creating new UserVerificationService in update...');
+            final stripeService = Provider.of<StripeService>(context, listen: false);
+            return UserVerificationService(githubService, stripeService);
           },
         ),
-        ChangeNotifierProxyProvider<AppwriteAuthService, IAPService>(
+        ChangeNotifierProxyProvider<StripeUserService, IAPService>(
           create: (context) {
-            LoggingService.debug('Main: Creating IAPService...');
+            logger.d('Main: Creating IAPService...');
             final iapService = IAPService();
-            final authService = Provider.of<AppwriteAuthService>(context, listen: false);
-            LoggingService.debug('Main: Setting auth service on IAPService...');
-            iapService.setAuthService(authService);
-            LoggingService.debug('Main: IAPService created and configured successfully');
+            final userService = Provider.of<StripeUserService>(context, listen: false);
+            logger.d('Main: Setting user service on IAPService...');
+            iapService.setAuthService(userService);
+            logger.d('Main: IAPService created and configured successfully');
             return iapService;
           },
-          update: (context, authService, previous) {
+          update: (context, userService, previous) {
             if (previous != null) {
-              LoggingService.debug('Main: Updating IAPService with new auth service...');
-              previous.setAuthService(authService);
+              logger.d('Main: Updating IAPService with new user service...');
+              previous.setAuthService(userService);
               return previous;
             }
-            LoggingService.debug('Main: Creating new IAPService in update...');
+            logger.d('Main: Creating new IAPService in update...');
             final iapService = IAPService();
-            iapService.setAuthService(authService);
+            iapService.setAuthService(userService);
             return iapService;
           },
         ),
@@ -202,24 +212,22 @@ class _AppFlowWrapperState extends State<AppFlowWrapper> {
   }
 
   Future<void> _determineInitialScreen() async {
-    LoggingService.debug('AppFlowWrapper: Starting to determine initial screen...');
+    logger.d('AppFlowWrapper: Starting to determine initial screen...');
     try {
-      // First, test Appwrite connection and verify user data
-      if (!mounted) return;
+             // First, test Stripe connection and verify user data
+       if (!mounted) return;
+       
+       final verificationService = Provider.of<UserVerificationService>(context, listen: false);
+       logger.d('AppFlowWrapper: Testing Stripe connection...');
       
-      final verificationService = Provider.of<UserVerificationService>(context, listen: false);
-      LoggingService.debug('AppFlowWrapper: Testing Appwrite connection...');
+             // Test the Stripe connection (ping functionality)
+       final isVerified = await verificationService.verifyUserData();
+      logger.d('AppFlowWrapper: User verification result: $isVerified');
       
-      // Test the Appwrite connection (ping functionality)
-      final isVerified = await verificationService.verifyUserData();
-      LoggingService.debug('AppFlowWrapper: User verification result: $isVerified');
-      
-      // Safely notify listeners after verification is complete
-      final connectionService = Provider.of<AppwriteConnectionService>(context, listen: false);
-      connectionService.safeNotifyListeners();
+             // Stripe services don't need connection service notification
       
       if (!isVerified) {
-        LoggingService.warning('AppFlowWrapper: User verification failed, showing error screen');
+        logger.w('AppFlowWrapper: User verification failed, showing error screen');
         if (mounted) {
           setState(() {
             _currentScreen = Scaffold(
@@ -229,10 +237,10 @@ class _AppFlowWrapperState extends State<AppFlowWrapper> {
                   children: [
                     const Icon(Icons.error_outline, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Failed to connect to Appwrite',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                                         const Text(
+                       'Failed to connect to Stripe',
+                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                     ),
                     const SizedBox(height: 8),
                     const Text(
                       'Please check your internet connection and try again.',
@@ -257,17 +265,17 @@ class _AppFlowWrapperState extends State<AppFlowWrapper> {
       if (!mounted) return;
       
       final nextScreen = await AppFlowService.getInitialScreen(context);
-      LoggingService.debug('AppFlowWrapper: Got next screen: ${nextScreen.runtimeType}');
+      logger.d('AppFlowWrapper: Got next screen: ${nextScreen.runtimeType}');
       if (mounted) {
         setState(() {
           _currentScreen = nextScreen;
         });
-        LoggingService.success('AppFlowWrapper: Screen updated successfully');
+        logger.i('AppFlowWrapper: Screen updated successfully');
       } else {
-        LoggingService.warning('AppFlowWrapper: Widget not mounted, skipping setState');
+        logger.w('AppFlowWrapper: Widget not mounted, skipping setState');
       }
     } catch (e, stackTrace) {
-      LoggingService.error('AppFlowWrapper: Error determining initial screen: $e', e, stackTrace);
+      logger.e('AppFlowWrapper: Error determining initial screen: $e', error: e, stackTrace: stackTrace);
       // Fallback to auth screen on error
       if (mounted) {
         setState(() {
