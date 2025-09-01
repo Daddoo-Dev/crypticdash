@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
-import '../services/onnx_ai_service.dart';
+
 import '../services/project_selection_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/settings_service.dart';
@@ -267,17 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   // AI Integration
-                  Consumer<ONNXAIService>(
-                    builder: (context, aiService, child) {
-                      return SwitchListTile(
-                        secondary: const Icon(Icons.psychology),
-                        title: const Text('AI Insights'),
-                        subtitle: const Text('Enable AI-powered project analysis'),
-                        value: aiService.enabled,
-                        onChanged: (value) => value ? aiService.enable() : aiService.disable(),
-                      );
-                    },
-                  ),
+
                   
                   // Project Management
                                      SwitchListTile(

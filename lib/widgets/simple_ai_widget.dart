@@ -38,9 +38,9 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
               children: [
                 Row(
                   children: [
-                     Icon(
-                       aiService.enabled ? Icons.ac_unit : Icons.ac_unit_outlined,
-                       color: aiService.enabled ? Colors.blue : Colors.grey,
+                     const Icon(
+                       Icons.ac_unit,
+                       color: Colors.blue,
                        size: 24,
                      ),
                     const SizedBox(width: 8),
@@ -92,7 +92,7 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
                  ] else ...[
                    // Show the button when not analyzing
                    Tooltip(
-                     message: 'Analyze repository and generate TODO.md file',
+                     message: 'Analyze repository and generate To-Do file',
                      child: SizedBox(
                        width: double.infinity,
                          child: ElevatedButton.icon(
@@ -100,7 +100,7 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
                              ? null
                              : () => _generateTODOMD(context, aiService),
                          icon: const Icon(Icons.task_alt),
-                         label: const Text('Analyze & Generate TODO'),
+                         label: const Text('Analyze & Generate To-Do'),
                            style: ElevatedButton.styleFrom(
                            backgroundColor: Colors.blue,
                              foregroundColor: Colors.white,
@@ -221,7 +221,7 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
         setState(() {
           _isAnalyzing = false;
         });
-        _showErrorDialog(currentContext, 'Error managing TODO: $e');
+        _showErrorDialog(currentContext, 'Error managing To-Do: $e');
       }
     }
   }
@@ -265,7 +265,7 @@ class _SimpleAIWidgetState extends State<SimpleAIWidget> {
         widget.project.owner,
         widget.project.repoName,
         todoContent,
-        'Update TODO.md with AI-generated analysis',
+        'Update To-Do file with AI-generated analysis',
       );
       
       if (success) {

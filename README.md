@@ -1,12 +1,12 @@
 # CrypticDash
 
-A dynamic dashboard for managing multiple GitHub projects with integrated todo lists and progress tracking.
+A dynamic dashboard for managing multiple GitHub projects with integrated To-Do lists and progress tracking.
 
 ## Features
 
 - **GitHub Integration**: Connect and manage multiple repositories
 - **Project Selection**: Choose which repositories to monitor
-- **Todo Management**: Track tasks and progress across projects
+- **To-Do Management**: Track tasks and progress across projects
 - **Theme Support**: Light and dark theme switching
 - **Cross-Platform**: Works on Android, iOS, macOS, Windows, and Web
 
@@ -53,7 +53,7 @@ A dynamic dashboard for managing multiple GitHub projects with integrated todo l
 
 1. **Authentication**: Sign in with GitHub using OAuth or Personal Access Token
 2. **Project Selection**: Choose which repositories to monitor
-3. **Dashboard**: View project progress, todos, and statistics
+3. **Dashboard**: View project progress, To-Dos, and statistics
 4. **Theme Toggle**: Switch between light and dark themes
 
 ## Building

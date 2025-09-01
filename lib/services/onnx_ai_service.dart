@@ -23,15 +23,7 @@ class ONNXAIService extends ChangeNotifier {
     initialize();
   }
 
-  void enable() {
-    _enabled = true;
-    notifyListeners();
-  }
 
-  void disable() {
-    _enabled = false;
-    notifyListeners();
-  }
 
   Future<void> initialize() async {
     try {

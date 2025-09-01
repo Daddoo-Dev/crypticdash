@@ -19,6 +19,7 @@ class GitHubRepository {
   final String defaultBranch;
   final Map<String, dynamic> permissions;
   final String ownerLogin; // Add explicit owner field
+  final String source; // 'personal' or 'organization'
 
   GitHubRepository({
     required this.id,
@@ -41,6 +42,7 @@ class GitHubRepository {
     required this.defaultBranch,
     required this.permissions,
     required this.ownerLogin,
+    required this.source,
   });
 
   bool get canWrite => permissions['push'] == true;
@@ -71,6 +73,7 @@ class GitHubRepository {
       'defaultBranch': defaultBranch,
       'permissions': permissions,
       'ownerLogin': ownerLogin,
+      'source': source,
     };
   }
 
@@ -96,6 +99,7 @@ class GitHubRepository {
       defaultBranch: json['default_branch'] ?? 'main',
       permissions: json['permissions'] ?? {},
       ownerLogin: json['owner']['login'], // Assuming 'owner' is a Map and 'login' is the key
+      source: json['source'] ?? 'personal', // Default to personal if not specified
     );
   }
 }

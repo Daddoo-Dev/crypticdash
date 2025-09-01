@@ -40,21 +40,21 @@
 ### Q: How do I refresh project data?
 **A:** Pull down on the dashboard (mobile) or click the refresh button on individual projects.
 
-## ✅ TODO Management
+## ✅ To-Do Management
 
-### Q: How do I add new TODO items?
+### Q: How do I add new To-Do items?
 **A:** In project details, click "Add To-Do", enter a title, optional notes, and select a category.
 
-### Q: Can I edit existing TODO items?
+### Q: Can I edit existing To-Do items?
 **A:** Currently, you can toggle completion status and add notes. Full editing is planned for future versions.
 
-### Q: How do I mark a TODO as complete?
-**A:** Simply tap on any unchecked TODO item to mark it complete, or tap a completed item to mark it pending.
+### Q: How do I mark a To-Do as complete?
+**A:** Simply tap on any unchecked To-Do item to mark it complete, or tap a completed item to mark it pending.
 
-### Q: What are the different TODO categories?
+### Q: What are the different To-Do categories?
 **A:** Categories include: Current Progress, Next Steps, Roadmap, Features, Bug Fixes, Documentation, Testing, and Deployment.
 
-### Q: Do TODO changes sync automatically?
+### Q: Do To-Do changes sync automatically?
 **A:** Yes! All changes are automatically saved to GitHub in real-time.
 
 ### Q: What happens if I lose internet connection?
@@ -77,7 +77,7 @@
 **A:** AI Insights provide intelligent analysis of your projects, including progress analysis, next steps recommendations, and task prioritization.
 
 ### Q: How do I enable AI features?
-**A:** Go to Settings and toggle "Enable AI Insights" to ON.
+**A:** AI features are automatically enabled for all users. No setup required!
 
 ### Q: What AI models does CrypticDash use?
 **A:** CrypticDash uses local AI models (Gemma 3 270M IT) for privacy and offline functionality.
@@ -108,13 +108,13 @@
 **A:** All data is stored on GitHub in your repositories. CrypticDash only caches data locally on your device.
 
 ### Q: Does CrypticDash have access to my code?
-**A:** CrypticDash only reads TODO.md files and repository metadata. It cannot access your source code.
+**A:** CrypticDash only reads To-Do files and repository metadata. It cannot access your source code.
 
 ### Q: Are my GitHub credentials secure?
 **A:** Yes! Credentials are stored locally on your device and encrypted. They're never sent to external servers.
 
 ### Q: Can CrypticDash modify my repositories?
-**A:** CrypticDash can only modify TODO.md files in repositories you've explicitly selected. It cannot modify any other files.
+**A:** CrypticDash can only modify To-Do files in repositories you've explicitly selected. It cannot modify any other files.
 
 ## 🚨 Troubleshooting
 
@@ -124,7 +124,7 @@
 ### Q: Projects aren't loading. How do I fix this?
 **A:** Check your internet connection, verify GitHub access, refresh the dashboard, or re-authenticate.
 
-### Q: TODO changes aren't saving. What's wrong?
+### Q: To-Do changes aren't saving. What's wrong?
 **A:** Check your GitHub write permissions, verify the repository exists, and ensure you have internet connectivity.
 
 ### Q: The app is slow or crashes frequently. How can I improve performance?
@@ -138,7 +138,7 @@
 ### Q: How often does CrypticDash sync with GitHub?
 **A:** CrypticDash syncs in real-time when you make changes, and also performs background syncs periodically.
 
-### Q: What happens if I edit TODOs from multiple devices?
+### Q: What happens if I edit To-Dos from multiple devices?
 **A:** Changes are synced automatically. If there are conflicts, the most recent change typically wins.
 
 ### Q: Can I export my project data?
@@ -148,7 +148,7 @@
 **A:** No worries! The repository still exists on GitHub. You can simply add it back to CrypticDash.
 
 ### Q: How do I backup my data?
-**A:** Your data is automatically backed up on GitHub. You can also manually backup TODO.md files from your repositories.
+**A:** Your data is automatically backed up on GitHub. You can also manually backup To-Do files from your repositories.
 
 ## 🆕 Features & Updates
 

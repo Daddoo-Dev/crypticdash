@@ -88,7 +88,7 @@ Each project shows:
 - **Auto-switch**: Follows system preference
 
 ### AI Features
-- **Enable AI Insights**: Toggle AI-powered analysis
+- **AI Insights**: Automatically active for all users
 - **Generate Reports**: Get project insights and recommendations
 - **Smart Prioritization**: AI suggests task order
 

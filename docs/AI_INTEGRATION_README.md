@@ -19,10 +19,10 @@ CrypticDash now includes powerful AI-powered features to help you manage your Gi
 
 ## 🚀 Getting Started
 
-### 1. **Enable AI Features**
-1. Open CrypticDash settings
-2. Navigate to the "AI Integration" section
-3. Toggle "Enable AI Features" to ON
+### 1. **AI Features**
+1. Open CrypticDash
+2. AI features are automatically active
+3. No setup required
 
 ### 2. **Configure Your AI Provider**
 1. **Choose Provider**: Select from OpenAI, Anthropic, Azure, Google, or Local
@@ -147,7 +147,7 @@ CrypticDash now includes powerful AI-powered features to help you manage your Gi
 ### **Common Issues:**
 
 **AI Features Not Working:**
-- Check if AI is enabled in settings
+- AI is automatically enabled for all users
 - Verify API key is correctly configured
 - Ensure you have sufficient API credits
 

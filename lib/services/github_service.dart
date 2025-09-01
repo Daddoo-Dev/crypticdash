@@ -144,8 +144,13 @@ class GitHubService extends ChangeNotifier {
     }
 
     try {
+      // Get authenticated user info to determine personal username
+      final userData = await getAuthenticatedUser();
+      final personalUsername = userData?['login'];
+      
+      // First try the standard user repos endpoint with type=all
       final response = await http.get(
-        Uri.parse('$_baseUrl/user/repos?sort=updated&per_page=100'),
+        Uri.parse('$_baseUrl/user/repos?sort=updated&per_page=100&type=all'),
         headers: {
           'Authorization': 'token $_accessToken',
           'Accept': 'application/vnd.github.v3+json',
@@ -157,17 +162,47 @@ class GitHubService extends ChangeNotifier {
         
         // Debug: Log the first few repositories to see their structure
         debugPrint('=== GitHub Repositories Debug ===');
-        for (int i = 0; i < reposJson.length && i < 3; i++) {
+        debugPrint('Personal username: $personalUsername');
+        debugPrint('Total repos found: ${reposJson.length}');
+        for (int i = 0; i < reposJson.length && i < 5; i++) {
           final repo = reposJson[i];
+          final ownerLogin = repo['owner']['login'];
+          final source = (ownerLogin == personalUsername) ? 'personal' : 'organization';
           debugPrint('Repo $i:');
           debugPrint('  name: ${repo['name']}');
           debugPrint('  full_name: ${repo['full_name']}');
-          debugPrint('  owner.login: ${repo['owner']?['login']}');
+          debugPrint('  owner.login: $ownerLogin');
+          debugPrint('  source: $source');
+          debugPrint('  private: ${repo['private']}');
           debugPrint('  html_url: ${repo['html_url']}');
         }
         debugPrint('=== End Debug ===');
         
-        return reposJson.map((repo) => GitHubRepository.fromJson(repo)).toList();
+        // Process repositories and determine source
+        final repositories = reposJson.map((repo) {
+          // Determine if this is a personal or organization repository
+          final ownerLogin = repo['owner']['login'];
+          final source = (ownerLogin == personalUsername) ? 'personal' : 'organization';
+          
+          // Add source information to the repo data
+          final repoWithSource = Map<String, dynamic>.from(repo);
+          repoWithSource['source'] = source;
+          
+          return GitHubRepository.fromJson(repoWithSource);
+        }).toList();
+        
+        // If we found organization repos, return them
+        if (repositories.any((repo) => repo.source == 'organization')) {
+          debugPrint('Found organization repositories: ${repositories.where((repo) => repo.source == 'organization').length}');
+          return repositories;
+        }
+        
+        // If no organization repos found, try fetching organizations directly
+        debugPrint('No organization repos found in user/repos, trying organizations endpoint...');
+        final orgRepos = await _fetchOrganizationRepositories(personalUsername!);
+        repositories.addAll(orgRepos);
+        
+        return repositories;
       } else {
         throw Exception('Failed to fetch repositories: ${response.statusCode}');
       }
@@ -175,6 +210,84 @@ class GitHubService extends ChangeNotifier {
       debugPrint('Error fetching repositories: $e');
       rethrow;
     }
+  }
+
+  Future<List<GitHubRepository>> _fetchOrganizationRepositories(String personalUsername) async {
+    try {
+      // Get user's organizations
+      final orgsResponse = await http.get(
+        Uri.parse('$_baseUrl/user/orgs'),
+        headers: {
+          'Authorization': 'token $_accessToken',
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      );
+
+      debugPrint('=== Organization Debug ===');
+      debugPrint('Organizations API response status: ${orgsResponse.statusCode}');
+      debugPrint('Organizations API response body: ${orgsResponse.body}');
+      
+      if (orgsResponse.statusCode == 200) {
+        final List<dynamic> orgsJson = json.decode(orgsResponse.body);
+        debugPrint('Found ${orgsJson.length} organizations');
+        
+        if (orgsJson.isEmpty) {
+          debugPrint('No organizations found. This could mean:');
+          debugPrint('1. Token lacks read:org permission');
+          debugPrint('2. User is not a member of any organizations');
+          debugPrint('3. Organizations are private and token lacks access');
+        }
+        
+        final List<GitHubRepository> allOrgRepos = [];
+        
+        for (final org in orgsJson) {
+          final orgName = org['login'];
+          debugPrint('Fetching repos for organization: $orgName');
+          
+          try {
+            final orgReposResponse = await http.get(
+              Uri.parse('$_baseUrl/orgs/$orgName/repos?sort=updated&per_page=100'),
+              headers: {
+                'Authorization': 'token $_accessToken',
+                'Accept': 'application/vnd.github.v3+json',
+              },
+            );
+
+            debugPrint('Organization $orgName repos API response status: ${orgReposResponse.statusCode}');
+            
+            if (orgReposResponse.statusCode == 200) {
+              final List<dynamic> orgReposJson = json.decode(orgReposResponse.body);
+              debugPrint('Found ${orgReposJson.length} repos in organization $orgName');
+              
+              final orgRepos = orgReposJson.map((repo) {
+                final repoWithSource = Map<String, dynamic>.from(repo);
+                repoWithSource['source'] = 'organization';
+                return GitHubRepository.fromJson(repoWithSource);
+              }).toList();
+              
+              allOrgRepos.addAll(orgRepos);
+            } else {
+              debugPrint('Failed to fetch repos for organization $orgName: ${orgReposResponse.statusCode}');
+              debugPrint('Response body: ${orgReposResponse.body}');
+            }
+          } catch (e) {
+            debugPrint('Error fetching repos for organization $orgName: $e');
+          }
+        }
+        
+        debugPrint('=== End Organization Debug ===');
+        return allOrgRepos;
+      } else {
+        debugPrint('Failed to fetch organizations: ${orgsResponse.statusCode}');
+        debugPrint('This suggests the token lacks read:org permission');
+        debugPrint('=== End Organization Debug ===');
+      }
+    } catch (e) {
+      debugPrint('Error fetching organizations: $e');
+      debugPrint('=== End Organization Debug ===');
+    }
+    
+    return [];
   }
 
   /// Fetch the authenticated user's information from GitHub

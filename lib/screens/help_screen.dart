@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_themes.dart';
 import '../widgets/help_widget.dart';
 
@@ -67,7 +68,7 @@ class HelpScreen extends StatelessWidget {
 
             HelpWidget(
               title: 'Getting Started',
-              content: 'Learn the basics of setting up and using CrypticDash',
+              content: 'Learn what you can do now that you\'re logged in',
               icon: Icons.rocket_launch,
               onTap: () => _showGettingStartedHelp(context),
             ),
@@ -80,7 +81,7 @@ class HelpScreen extends StatelessWidget {
             ),
 
             HelpWidget(
-              title: 'TODO Management',
+              title: 'To-Do Management',
               content: 'Create, organize, and track your project tasks',
               icon: Icons.checklist,
               onTap: () => _showTodoManagementHelp(context),
@@ -95,9 +96,9 @@ class HelpScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Common Issues
+            // Troubleshooting
             Text(
-              '🚨 Common Issues',
+              '🔧 Troubleshooting',
               style: AppThemes.headlineSmall.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -145,12 +146,7 @@ class HelpScreen extends StatelessWidget {
               onTap: () => _showUserGuideHelp(context),
             ),
 
-            HelpWidget(
-              title: 'Troubleshooting Guide',
-              content: 'Comprehensive problem-solving guide',
-              icon: Icons.build,
-              onTap: () => _showTroubleshootingHelp(context),
-            ),
+
 
             HelpWidget(
               title: 'FAQ',
@@ -231,35 +227,56 @@ class HelpScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => HelpDialog(
-        title: '🚀 Getting Started',
+        title: '🚀 Welcome to CrypticDash!',
         children: const [
           HelpSection(
-            title: 'First Time Setup',
+            title: 'What You Can Do Now',
             children: [
               HelpStep(
                 stepNumber: 1,
-                description: 'Download and install CrypticDash on your device',
+                description: 'Add your first project using the + button on the dashboard',
               ),
               HelpStep(
                 stepNumber: 2,
-                description: 'Launch the app and tap "Sign in with GitHub"',
+                description: 'Create your first to-do by opening a project and clicking "Add To-Do"',
               ),
               HelpStep(
                 stepNumber: 3,
-                description: 'Grant the necessary permissions when prompted',
+                description: 'Check your subscription status in Settings → Account & Subscription',
+              ),
+                             HelpStep(
+                 stepNumber: 4,
+                 description: 'AI features are automatically active for all users',
+               ),
+              HelpStep(
+                stepNumber: 5,
+                description: 'Set up cross-device sync in Settings → GitHub Integration',
+              ),
+            ],
+          ),
+          HelpSection(
+            title: 'Quick Navigation',
+            children: [
+              HelpStep(
+                stepNumber: 1,
+                description: 'Dashboard - View and manage all your projects',
+              ),
+              HelpStep(
+                stepNumber: 2,
+                description: 'Project Details - Create and manage to-dos for each project',
+              ),
+              HelpStep(
+                stepNumber: 3,
+                description: 'Settings - Configure app preferences and subscription',
               ),
               HelpStep(
                 stepNumber: 4,
-                description: 'Select which repositories you want to monitor',
-              ),
-              HelpStep(
-                stepNumber: 5,
-                description: 'Start managing your projects and TODOs!',
+                description: 'Help - Access this guide and troubleshooting',
               ),
             ],
           ),
           HelpTip(
-            tip: 'Use OAuth authentication for the most secure and convenient experience.',
+            tip: 'Your projects and to-dos automatically sync with GitHub, so your work is always backed up and accessible.',
           ),
         ],
       ),
@@ -326,10 +343,10 @@ class HelpScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => HelpDialog(
-        title: '✅ TODO Management',
+        title: '✅ To-Do Management',
         children: const [
           HelpSection(
-            title: 'Creating TODOs',
+            title: 'Creating To-Dos',
             children: [
               HelpStep(
                 stepNumber: 1,
@@ -354,11 +371,11 @@ class HelpScreen extends StatelessWidget {
             ],
           ),
           HelpSection(
-            title: 'Managing TODOs',
+            title: 'Managing To-Dos',
             children: [
               HelpStep(
                 stepNumber: 1,
-                description: 'Tap any TODO to toggle completion status',
+                description: 'Tap any to-do to toggle completion status',
               ),
               HelpStep(
                 stepNumber: 2,
@@ -366,7 +383,7 @@ class HelpScreen extends StatelessWidget {
               ),
               HelpStep(
                 stepNumber: 3,
-                description: 'TODOs are automatically grouped by category',
+                description: 'To-dos are automatically grouped by category',
               ),
               HelpStep(
                 stepNumber: 4,
@@ -388,23 +405,23 @@ class HelpScreen extends StatelessWidget {
       builder: (context) => HelpDialog(
         title: '🤖 AI Features',
         children: const [
-          HelpSection(
-            title: 'Enabling AI',
-            children: [
-              HelpStep(
-                stepNumber: 1,
-                description: 'Go to Settings in the app',
-              ),
-              HelpStep(
-                stepNumber: 2,
-                description: 'Toggle "Enable AI Insights" to ON',
-              ),
-              HelpStep(
-                stepNumber: 3,
-                description: 'AI features are now available',
-              ),
-            ],
-          ),
+                     HelpSection(
+             title: 'AI Features',
+             children: [
+               HelpStep(
+                 stepNumber: 1,
+                 description: 'AI features are automatically active',
+               ),
+               HelpStep(
+                 stepNumber: 2,
+                 description: 'No setup required - AI analyzes your projects',
+               ),
+               HelpStep(
+                 stepNumber: 3,
+                 description: 'Available to all users (free, trial, premium)',
+               ),
+             ],
+           ),
           HelpSection(
             title: 'Available AI Features',
             children: [
@@ -497,7 +514,7 @@ class HelpScreen extends StatelessWidget {
         title: '🔄 Sync Issues',
         children: const [
           HelpSection(
-            title: 'TODOs Not Saving',
+            title: 'To-Dos Not Saving',
             children: [
               HelpStep(
                 stepNumber: 1,
@@ -607,123 +624,200 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '📖 User Guide',
-        children: const [
+        children: [
           HelpSection(
-            title: 'Complete Documentation',
+            title: 'Getting Started',
             children: [
               HelpStep(
                 stepNumber: 1,
-                description: 'Check the docs/USER_GUIDE.md file',
+                description: 'Sign in with GitHub using OAuth or Personal Access Token',
               ),
               HelpStep(
                 stepNumber: 2,
-                description: 'Covers all features in detail',
+                description: 'Select which repositories to monitor from your GitHub account',
               ),
               HelpStep(
                 stepNumber: 3,
-                description: 'Includes step-by-step instructions',
+                description: 'Use the dashboard to view all your selected projects',
+              ),
+            ],
+          ),
+          HelpSection(
+            title: 'Managing Projects',
+            children: [
+              HelpStep(
+                stepNumber: 1,
+                description: 'Add more repositories using the + button on the dashboard',
+              ),
+              HelpStep(
+                stepNumber: 2,
+                description: 'Filter repositories by Personal or Organization in project selection',
+              ),
+              HelpStep(
+                stepNumber: 3,
+                description: 'Remove projects by opening project details and scrolling to the bottom',
+              ),
+            ],
+          ),
+          HelpSection(
+            title: 'AI-Powered To-Do Management',
+            children: [
+              HelpStep(
+                stepNumber: 1,
+                description: 'Click "Analyze & Generate To-Do" in any project to use the Yeti Assistant',
+              ),
+              HelpStep(
+                stepNumber: 2,
+                description: 'The AI analyzes your repository and creates structured To-Do lists',
+              ),
+              HelpStep(
+                stepNumber: 3,
+                description: 'Mark To-Dos as complete by tapping them - changes sync automatically to GitHub',
               ),
               HelpStep(
                 stepNumber: 4,
-                description: 'Best practices and tips',
+                description: 'Add your own To-Dos manually using the "Add To-Do" button',
+              ),
+            ],
+          ),
+          HelpSection(
+            title: 'Tips & Best Practices',
+            children: [
+              HelpStep(
+                stepNumber: 1,
+                description: 'Start with smaller repositories for AI analysis - it works better on focused projects',
+              ),
+              HelpStep(
+                stepNumber: 2,
+                description: 'Use the search bar to quickly find specific projects on your dashboard',
+              ),
+              HelpStep(
+                stepNumber: 3,
+                description: 'Check your subscription status in Settings → Account & Subscription',
+              ),
+              HelpStep(
+                stepNumber: 4,
+                description: 'All To-Do changes are automatically saved to GitHub - no manual saving needed',
               ),
             ],
           ),
           HelpTip(
-            tip: 'The User Guide is the most comprehensive resource for learning CrypticDash.',
+            tip: 'The Yeti Assistant is the core feature - it analyzes your code and creates intelligent To-Do lists based on your actual project structure.',
           ),
         ],
       ),
     );
   }
 
-  void _showTroubleshootingHelp(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => HelpDialog(
-        title: '🔧 Troubleshooting Guide',
-        children: const [
-          HelpSection(
-            title: 'Problem-Solving Resource',
-            children: [
-              HelpStep(
-                stepNumber: 1,
-                description: 'Check the docs/TROUBLESHOOTING.md file',
-              ),
-              HelpStep(
-                stepNumber: 2,
-                description: 'Common issues and solutions',
-              ),
-              HelpStep(
-                stepNumber: 3,
-                description: 'Platform-specific troubleshooting',
-              ),
-              HelpStep(
-                stepNumber: 4,
-                description: 'Diagnostic tools and commands',
-              ),
-            ],
-          ),
-          HelpTip(
-            tip: 'The Troubleshooting Guide covers most common problems and their solutions.',
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _showFAQHelp(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => HelpDialog(
-        title: '❓ FAQ',
-        children: const [
+        title: '❓ Frequently Asked Questions',
+        children: [
           HelpSection(
-            title: 'Frequently Asked Questions',
+            title: 'AI Analysis',
             children: [
               HelpStep(
                 stepNumber: 1,
-                description: 'Check the docs/FAQ.md file',
-              ),
-              HelpStep(
-                stepNumber: 2,
-                description: 'Quick answers to common questions',
-              ),
-              HelpStep(
-                stepNumber: 3,
-                description: 'Authentication, usage, and troubleshooting',
-              ),
-              HelpStep(
-                stepNumber: 4,
-                description: 'Updated regularly with new questions',
+                description: 'Why did the AI analysis fail?\n\nThe AI analysis can fail if your repository is very large, has no readable files, or if there are GitHub API rate limits. Try with a smaller repository first.',
               ),
             ],
           ),
-          HelpTip(
-            tip: 'The FAQ is perfect for quick answers to common questions.',
+          HelpSection(
+            title: 'Repository Access',
+            children: [
+              HelpStep(
+                stepNumber: 2,
+                description: 'Why can\'t I see all my GitHub repositories?\n\nOnly repositories you have write access to will appear. Private repos require proper permissions, and very large repos may not load immediately.',
+              ),
+            ],
+          ),
+          HelpSection(
+            title: 'Data Sync',
+            children: [
+              HelpStep(
+                stepNumber: 3,
+                description: 'Why aren\'t my To-Do changes saving to GitHub?\n\nChanges sync automatically, but require internet connection and proper GitHub permissions. Check your connection and repository access.',
+              ),
+            ],
+          ),
+          HelpSection(
+            title: 'Subscription',
+            children: [
+              HelpStep(
+                stepNumber: 4,
+                description: 'What\'s the difference between free and Premium?\n\nFree includes basic AI analysis and To-Do management. Premium adds advanced AI features, priority support, and unlimited repository analysis.',
+              ),
+            ],
+          ),
+          HelpSection(
+            title: 'Security',
+            children: [
+              HelpStep(
+                stepNumber: 5,
+                description: 'Is my data safe with CrypticDash?\n\nYes, all data is stored securely on GitHub in your repositories. CrypticDash uses enterprise-grade security standards (same as major financial institutions) and only reads/writes To-Do files - your source code remains private.',
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _openGitHubRepository(BuildContext context) {
-    // In a real app, this would open the GitHub repository URL
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Opening GitHub repository...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  Future<void> _openGitHubRepository(BuildContext context) async {
+    try {
+      final url = Uri.parse('https://github.com/shawnmcpeek/crypticdash');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open GitHub repository'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening repository: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
-  void _createIssue(BuildContext context) {
-    // In a real app, this would open the GitHub issues page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Opening GitHub issues...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  Future<void> _createIssue(BuildContext context) async {
+    try {
+      final url = Uri.parse('https://github.com/shawnmcpeek/crypticdash/issues');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open GitHub issues'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening issues: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }

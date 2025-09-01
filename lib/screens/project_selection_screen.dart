@@ -23,6 +23,7 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
   bool _isLoading = true;
   List<GitHubRepository> _repositories = [];
   String _searchQuery = '';
+  String _filterSource = 'all'; // 'all', 'personal', 'organization'
 
   @override
   void initState() {
@@ -61,12 +62,23 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
   }
 
   List<GitHubRepository> get _filteredRepositories {
-    if (_searchQuery.isEmpty) return _repositories;
-    return _repositories.where((repo) =>
-      repo.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      repo.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      repo.owner.toLowerCase().contains(_searchQuery.toLowerCase())
-    ).toList();
+    List<GitHubRepository> filtered = _repositories;
+    
+    // Apply source filter
+    if (_filterSource != 'all') {
+      filtered = filtered.where((repo) => repo.source == _filterSource).toList();
+    }
+    
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((repo) =>
+        repo.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        repo.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        repo.owner.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
+    }
+    
+    return filtered;
   }
 
   void _proceedToDashboard() {
@@ -170,6 +182,46 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                     _searchQuery = value;
                   });
                 },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Source Filter
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  const Text('Filter by source:'),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment<String>(
+                          value: 'all',
+                          label: Text('All'),
+                          icon: Icon(Icons.all_inclusive),
+                        ),
+                        ButtonSegment<String>(
+                          value: 'personal',
+                          label: Text('Personal'),
+                          icon: Icon(Icons.person),
+                        ),
+                        ButtonSegment<String>(
+                          value: 'organization',
+                          label: Text('Organization'),
+                          icon: Icon(Icons.business),
+                        ),
+                      ],
+                      selected: {_filterSource},
+                      onSelectionChanged: (Set<String> selection) {
+                        setState(() {
+                          _filterSource = selection.first;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -311,6 +363,24 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                                   ],
                                   Row(
                                     children: [
+                                      Icon(
+                                        repo.source == 'personal' ? Icons.person : Icons.business,
+                                        size: 16,
+                                        color: repo.source == 'personal' 
+                                            ? Colors.blue 
+                                            : Colors.green,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        repo.source == 'personal' ? 'Personal' : 'Organization',
+                                        style: AppThemes.bodyMedium.copyWith(
+                                          color: repo.source == 'personal' 
+                                              ? Colors.blue 
+                                              : Colors.green,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
                                       Icon(
                                         Icons.account_circle,
                                         size: 16,

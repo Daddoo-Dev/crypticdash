@@ -23,12 +23,12 @@ class ProjectDetailScreen extends StatefulWidget {
 
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   String _filterType = 'All'; // All, Completed, Pending
-  bool _isUpdating = false; // Track if we're updating a to-do
+  bool _isUpdating = false; // Track if we're updating a To-Do
   
   List<Todo> get _filteredTodos {
     final todos = widget.project.todos;
     
-    debugPrint('Project has ${todos.length} to-dos');
+    debugPrint('Project has ${todos.length} To-Dos');
     for (final todo in todos.take(5)) {
       debugPrint('  - ${todo.title} (${todo.section})');
     }
@@ -50,10 +50,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         if (a.isCompleted == b.isCompleted) {
           return 0; // Same completion status, maintain order
         }
-        return a.isCompleted ? 1 : -1; // Open to-dos first
+        return a.isCompleted ? 1 : -1; // Open To-Dos first
       });
     
-    debugPrint('After sorting, first 5 to-dos:');
+    debugPrint('After sorting, first 5 To-Dos:');
     for (final todo in sortedTodos.take(5)) {
       debugPrint('  - ${todo.title} (${todo.section})');
     }
@@ -372,7 +372,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         widget.project.repoName,
                   '${widget.project.repoName}-TODO.md',
         updatedContent,
-        'Update todo completion status: ${todo.isCompleted ? 'completed' : 'pending'} ${todo.title}',
+        'Update To-Do completion status: ${todo.isCompleted ? 'completed' : 'pending'} ${todo.title}',
         sha: currentSha,
       );
       
@@ -598,7 +598,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final notesController = TextEditingController();
     String? selectedSection;
     
-    // Get available sections from existing todos
+    // Get available sections from existing To-Dos
     final availableSections = widget.project.todos
         .map((todo) => todo.section)
         .where((section) => section != null)
@@ -712,7 +712,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   
   Future<void> _addTodo(String title, String? notes, String? section) async {
     try {
-      // Create new todo with a unique ID
+      // Create new To-Do with a unique ID
       final newTodo = Todo(
         id: '${DateTime.now().millisecondsSinceEpoch}_${title.hashCode}',
         title: title,
@@ -752,12 +752,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         widget.project.repoName,
         '${widget.project.repoName}-TODO.md',
         updatedContent,
-        'Add new to-do: $title',
+        'Add new To-Do: $title',
         sha: currentSha,
       );
       
       if (!success) {
-        throw Exception('Failed to save to-do to GitHub');
+        throw Exception('Failed to save To-Do to GitHub');
       }
       
       if (mounted) {

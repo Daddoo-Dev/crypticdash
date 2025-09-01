@@ -11,7 +11,7 @@ class GitHubOAuthService {
   static String get _clientId => dotenv.env['GITHUB_CLIENT_ID'] ?? '';
   static String get _clientSecret => dotenv.env['GITHUB_CLIENT_SECRET'] ?? '';
   static String _redirectUri = 'http://localhost:8080/oauth/callback';
-  static const String _scope = 'repo user:email';
+  static const String _scope = 'repo user:email read:org';
   
   static const String _authorizationUrl = 'https://github.com/login/oauth/authorize';
   static const String _tokenUrl = 'https://github.com/login/oauth/access_token';
