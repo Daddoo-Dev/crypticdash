@@ -23,13 +23,13 @@ void main() async {
   // Disable mouse tracking to prevent crashes
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
+  // Load environment variables (optional - works with .env file or system env vars)
   try {
     await dotenv.load(fileName: '.env');
     logger.i('Successfully loaded .env file');
   } catch (e) {
-    logger.w('Failed to load .env file: $e');
-    // Continue without .env file
+    logger.i('No .env file found - using system environment variables');
+    // Continue without .env file - environment variables will be loaded from system
   }
   
   // Stripe service will be initialized through the provider system
