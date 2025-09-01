@@ -10,6 +10,7 @@ class TestConfig {
     String fullName = 'user/test-repo',
     String description = 'Test repository',
     bool isPrivate = false,
+    String source = 'personal',
   }) {
     return GitHubRepository(
       id: id,
@@ -31,6 +32,7 @@ class TestConfig {
       defaultBranch: 'main',
       permissions: {'push': true, 'pull': true, 'admin': false},
       ownerLogin: 'user',
+      source: source,
     );
   }
 

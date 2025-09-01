@@ -624,7 +624,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '📖 User Guide',
-        children: [
+        children: const [
           HelpSection(
             title: 'Getting Started',
             children: [
@@ -716,7 +716,7 @@ class HelpScreen extends StatelessWidget {
       context: context,
       builder: (context) => HelpDialog(
         title: '❓ Frequently Asked Questions',
-        children: [
+        children: const [
           HelpSection(
             title: 'AI Analysis',
             children: [
