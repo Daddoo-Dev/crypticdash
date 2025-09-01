@@ -180,82 +180,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onPressed: () => _showHelp(context),
                 tooltip: 'Help & Support',
               ),
-              // Subscription Status Indicator
+              // Test Purchase Button
               Consumer<StripeService>(
-                                  builder: (context, stripeService, child) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.green,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(
-                              Icons.verified,
-                              size: 16,
-                              color: Colors.green,
+                builder: (context, stripeService, child) {
+                  return ElevatedButton(
+                    onPressed: () async {
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      try {
+                        final success = await stripeService.purchasePremium();
+                        if (success) {
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Premium purchase successful! Check Stripe dashboard.'),
+                              backgroundColor: Colors.green,
                             ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Stripe Connected',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.green,
-                              ),
+                          );
+                        } else {
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Purchase failed. Check logs for details.'),
+                              backgroundColor: Colors.red,
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Test Purchase Button
-                      ElevatedButton(
-                        onPressed: () async {
-                          final scaffoldMessenger = ScaffoldMessenger.of(context);
-                          try {
-                                                         final success = await stripeService.purchasePremium();
-                              if (success) {
-                                scaffoldMessenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Premium purchase successful! Check Stripe dashboard.'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              } else {
-                                scaffoldMessenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Purchase failed. Check logs for details.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              scaffoldMessenger.showSnackBar(
-                                SnackBar(
-                                  content: Text('Purchase error: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            minimumSize: const Size(0, 32),
+                          );
+                        }
+                      } catch (e) {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Purchase error: $e'),
+                            backgroundColor: Colors.red,
                           ),
-                          child: const Text('Test Purchase', style: TextStyle(fontSize: 12)),
-                        ),
-                    ],
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: const Text('Test Purchase', style: TextStyle(fontSize: 12)),
                   );
                 },
               ),

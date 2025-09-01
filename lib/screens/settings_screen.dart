@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
 
@@ -154,15 +155,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 leading: const Icon(Icons.person),
                                 title: Text(userData['name'] ?? 'Unknown Name'),
                                 subtitle: Text('@${userData['username'] ?? 'unknown'}'),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => _editProfile(userData),
+                                trailing: const Icon(Icons.info_outline),
                               ),
                               ListTile(
                                 leading: const Icon(Icons.email),
                                 title: const Text('Email'),
                                 subtitle: Text(userData['email'] ?? 'No email provided'),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => _editEmail(userData),
+                                trailing: const Icon(Icons.info_outline),
                               ),
                             ],
                           );
@@ -212,22 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     onTap: _showTokenManagement,
                   ),
-                                     ListTile(
-                     leading: const Icon(Icons.sync),
-                     title: const Text('Last Sync'),
-                     subtitle: Text('Data last updated: ${settingsService.getFormattedLastSyncTime()}'),
-                     trailing: IconButton(
-                       icon: const Icon(Icons.refresh),
-                       onPressed: () => _manualSync(settingsService),
-                       tooltip: 'Manual Sync',
-                     ),
-                   ),
-                   ListTile(
-                     leading: const Icon(Icons.schedule),
-                     title: const Text('Current Time'),
-                     subtitle: Text(DateFormat.yMMMd().add_jm().format(DateTime.now())),
-                     trailing: const Icon(Icons.info_outline),
-                   ),
+
                   const Divider(),
                   Consumer<ProjectSelectionService>(
                     builder: (context, projectSelectionService, child) {
@@ -240,9 +224,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             value: projectSelectionService.isGistEnabled,
                             onChanged: (value) {
                               if (value) {
-                                _enableGistSync(projectSelectionService);
+                                projectSelectionService.enableGistSync();
                               } else {
-                                _disableGistSync(projectSelectionService);
+                                projectSelectionService.disableGistSync();
                               }
                             },
                           ),
@@ -271,17 +255,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   
                   // Project Management
                                      SwitchListTile(
-                     secondary: const Icon(Icons.refresh),
-                     title: const Text('Auto-refresh Projects'),
-                     subtitle: const Text('Automatically update project data'),
-                     value: settingsService.autoRefreshEnabled,
-                     onChanged: (value) {
-                       settingsService.setAutoRefreshEnabled(value);
-                       _saveSettings(settingsService);
-                     },
-                   ),
-                  
-                                     SwitchListTile(
                      secondary: const Icon(Icons.check_circle),
                      title: const Text('Show Completed To-dos'),
                      subtitle: const Text('Display completed tasks in lists'),
@@ -291,60 +264,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                        _saveSettings(settingsService);
                      },
                    ),
-                  
-                                     SwitchListTile(
-                     secondary: const Icon(Icons.notifications),
-                     title: const Text('Enable Notifications'),
-                     subtitle: const Text('Get alerts for project updates'),
-                     value: settingsService.enableNotifications,
-                     onChanged: (value) {
-                       settingsService.setEnableNotifications(value);
-                       _saveSettings(settingsService);
-                     },
-                   ),
                 ],
               ),
             ),
             
             const SizedBox(height: 24),
             
-            // Data & Storage Section
-            _buildSectionHeader(
-              context,
-              'Data & Storage',
-              Icons.storage,
-              colorScheme.tertiary,
-            ),
-            Card(
-              child: Column(
-                children: [
-                                     SwitchListTile(
-                     secondary: const Icon(Icons.storage),
-                     title: const Text('Cache Project Data'),
-                     subtitle: const Text('Store data locally for offline access'),
-                     value: settingsService.cacheProjectData,
-                     onChanged: (value) {
-                       settingsService.setCacheProjectData(value);
-                       _saveSettings(settingsService);
-                     },
-                   ),
-                  ListTile(
-                    leading: const Icon(Icons.delete_sweep),
-                    title: const Text('Clear Cache'),
-                    subtitle: const Text('Remove all cached data'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _clearCache,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.download),
-                    title: const Text('Export Data'),
-                    subtitle: const Text('Download project data as JSON/CSV'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _exportData,
-                  ),
-                ],
-              ),
-            ),
+            
             
             const SizedBox(height: 24),
             
@@ -372,13 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _showAbout,
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.restore),
-                    title: const Text('Reset All Settings'),
-                    subtitle: const Text('Restore default configuration'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _resetSettings(settingsService),
-                  ),
+
                 ],
               ),
             ),
@@ -424,16 +344,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('GitHub Access Token Management'),
+        title: const Text('GitHub Access Token'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Current Status:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
             Consumer<GitHubService>(
               builder: (context, githubService, child) {
                 final hasToken = githubService.accessToken != null;
@@ -446,7 +361,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      hasToken ? 'Token is valid and connected' : 'No valid token found',
+                      hasToken ? 'Connected to GitHub' : 'Not connected',
                       style: TextStyle(
                         color: hasToken ? AppThemes.successGreen : AppThemes.errorRed,
                       ),
@@ -457,18 +372,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Token Actions:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text('• View token permissions and scope'),
-            const Text('• Test token validity'),
-            const Text('• Revoke current token'),
-            const Text('• Generate new token'),
-            const SizedBox(height: 16),
-            const Text(
-              'Note: For security reasons, tokens are stored locally and encrypted.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              'Your GitHub access token is used to read repositories and manage to-do files.',
+              style: TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -504,248 +409,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _manualSync(SettingsService settingsService) {
-    settingsService.updateLastSyncTime();
-    _saveSettings(settingsService);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Manual sync completed!'),
-        backgroundColor: AppThemes.successGreen,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 
-  void _clearCache() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Cache'),
-        content: const Text('This will remove all cached data. Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Cache cleared successfully!'),
-                  backgroundColor: AppThemes.successGreen,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppThemes.errorRed),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _exportData() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Export Project Data'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Export Format:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• JSON: Complete project data with metadata'),
-            Text('• CSV: Simplified table format for spreadsheets'),
-            SizedBox(height: 16),
-            Text(
-              'Data Included:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('• Project information and descriptions'),
-            Text('• To-do lists with completion status'),
-            Text('• Progress tracking data'),
-            Text('• Repository connection status'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Data exported successfully!'),
-                  backgroundColor: AppThemes.successGreen,
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            },
-            icon: const Icon(Icons.download),
-            label: const Text('Export JSON'),
-          ),
-        ],
-      ),
-    );
-  }
+  
 
-  void _editProfile(Map<String, dynamic> userData) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Display Name',
-                hintText: 'Enter your display name',
-              ),
-              controller: TextEditingController(text: userData['name'] ?? ''),
-              onChanged: (value) {
-                userData['name'] = value;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                hintText: 'Enter your username',
-              ),
-              controller: TextEditingController(text: userData['username'] ?? ''),
-              onChanged: (value) {
-                userData['username'] = value;
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              await UserIdentityService.storeUserIdentity(
-                username: userData['username'] ?? '',
-                userId: userData['userId'] ?? 0,
-                name: userData['name'],
-                email: userData['email'],
-              );
-              if (mounted) {
-                navigator.pop();
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile updated successfully!'),
-                    backgroundColor: AppThemes.successGreen,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _editEmail(Map<String, dynamic> userData) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Email'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Email Address',
-                hintText: 'Enter your email address',
-              ),
-              controller: TextEditingController(text: userData['email'] ?? ''),
-              keyboardType: TextInputType.emailAddress,
-              onChanged: (value) {
-                userData['email'] = value;
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              await UserIdentityService.storeUserIdentity(
-                username: userData['username'] ?? '',
-                userId: userData['userId'] ?? 0,
-                name: userData['name'],
-                email: userData['email'],
-              );
-              if (mounted) {
-                navigator.pop();
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Email updated successfully!'),
-                    backgroundColor: AppThemes.successGreen,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _resetSettings(SettingsService settingsService) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset All Settings'),
-        content: const Text('This will restore all settings to their default values. Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              settingsService.resetToDefaults();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Settings reset to defaults!'),
-                  backgroundColor: AppThemes.warningOrange,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppThemes.errorRed),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-  }
+
+
+
+
+
 
   void _showHelp() {
     Navigator.of(context).push(
@@ -758,92 +432,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showAbout() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('About crypticdash'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('crypticdash v1.0.0'),
-            SizedBox(height: 8),
-            Text('A comprehensive dashboard for managing multiple GitHub projects with integrated to-do lists and progress tracking.'),
-            SizedBox(height: 16),
-            Text('© 2025 crypticdash Team'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (context) => FutureBuilder<PackageInfo>(
+        future: PackageInfo.fromPlatform(),
+        builder: (context, snapshot) {
+          final version = snapshot.hasData ? 'v${snapshot.data!.version}' : 'v1.0.0';
+          return AlertDialog(
+            title: const Text('About crypticdash'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('crypticdash $version'),
+                const SizedBox(height: 8),
+                const Text('CrypticDash is a comprehensive dashboard that helps developers manage multiple GitHub projects by automatically analyzing repositories and generating intelligent to-do lists, with seamless cross-device synchronization and AI-powered insights.'),
+                const SizedBox(height: 16),
+                const Text('© 2025 crypticdash Team'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  void _enableGistSync(ProjectSelectionService projectSelectionService) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Enable Cross-Device Sync'),
-        content: const Text('This will enable cross-device sync using GitHub Gist. Your repository selections will be stored in your GitHub Gist.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              Navigator.of(context).pop();
-              await projectSelectionService.enableGistSync();
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Cross-device sync enabled!'),
-                    backgroundColor: AppThemes.successGreen,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-            child: const Text('Enable Sync'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _disableGistSync(ProjectSelectionService projectSelectionService) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Disable Cross-Device Sync'),
-        content: const Text('This will disable cross-device sync. Your repository selections will no longer be synced across devices.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              Navigator.of(context).pop();
-              await projectSelectionService.disableGistSync();
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Cross-device sync disabled.'),
-                    backgroundColor: AppThemes.warningOrange,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-            child: const Text('Disable Sync'),
-          ),
-        ],
-      ),
-    );
-  }
 }
