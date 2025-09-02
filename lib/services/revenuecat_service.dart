@@ -92,6 +92,79 @@ class StripeService extends ChangeNotifier {
     }
   }
   
+  /// Create customer from store purchase (Microsoft Store, App Store, Google Play)
+  Future<bool> createCustomerFromStorePurchase({
+    required String userId,
+    required String source, // 'microsoft_store', 'app_store', 'google_play'
+    required String storeTransactionId,
+    required String storeReceipt,
+    required Map<String, dynamic> subscriptionData,
+  }) async {
+    try {
+      _logger.i('Stripe service: Creating customer from $source purchase');
+      
+      // Ensure we have a customer
+      final customerResult = await _findOrCreateCustomer(userId);
+      if (!customerResult['success']) {
+        _logger.e('Stripe service: Could not find or create customer');
+        return false;
+      }
+      
+      final customerId = customerResult['customerId'];
+      
+      // Update customer with store purchase metadata
+      final updateResponse = await http.post(
+        Uri.parse('$_stripeApiUrl/customers/$customerId'),
+        headers: {
+          'Authorization': 'Bearer ${StripeConfig.secretKey}',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'metadata[source]': source,
+          'metadata[store_transaction_id]': storeTransactionId,
+          'metadata[store_receipt]': storeReceipt,
+          'metadata[subscription_status]': subscriptionData['status'] ?? 'active',
+          'metadata[subscription_expires]': subscriptionData['expires_at'] ?? '',
+          'metadata[platform]': _getPlatformFromSource(source),
+        },
+      );
+      
+      if (updateResponse.statusCode == 200) {
+        final customerData = json.decode(updateResponse.body);
+        _logger.i('Stripe service: Updated customer with $source purchase data: ${customerData['id']}');
+        
+        // Set current customer and update premium status
+        _currentCustomerId = customerId;
+        _currentUserId = userId;
+        _hasPremiumAccess = subscriptionData['status'] == 'active';
+        
+        notifyListeners();
+        return true;
+      } else {
+        _logger.e('Stripe service: Failed to update customer: ${updateResponse.statusCode}');
+        _logger.e('Stripe service: Error response: ${updateResponse.body}');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Error creating customer from store purchase: $e', error: e, stackTrace: StackTrace.current);
+      return false;
+    }
+  }
+  
+  /// Get platform from purchase source
+  String _getPlatformFromSource(String source) {
+    switch (source) {
+      case 'microsoft_store':
+        return 'windows';
+      case 'app_store':
+        return 'ios';
+      case 'google_play':
+        return 'android';
+      default:
+        return 'unknown';
+    }
+  }
+  
   /// Get user's subscription status from Stripe
   Future<String> getUserSubscriptionStatus(String userId) async {
     try {
@@ -142,6 +215,44 @@ class StripeService extends ChangeNotifier {
       _logger.e('Failed to get subscription status: $e', error: e, stackTrace: StackTrace.current);
       return 'free';
     }
+  }
+  
+  /// Get customer purchase source information
+  Future<Map<String, dynamic>?> getCustomerPurchaseSource(String userId) async {
+    try {
+      final customerResult = await _findOrCreateCustomer(userId);
+      if (!customerResult['success']) return null;
+      
+      final customerId = customerResult['customerId'];
+      
+      final response = await http.get(
+        Uri.parse('$_stripeApiUrl/customers/$customerId'),
+        headers: {
+          'Authorization': 'Bearer ${StripeConfig.secretKey}',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final customerData = json.decode(response.body);
+        final metadata = customerData['metadata'] ?? {};
+        
+        return {
+          'source': metadata['source'] ?? 'stripe_direct',
+          'platform': metadata['platform'] ?? 'unknown',
+          'store_transaction_id': metadata['store_transaction_id'],
+          'subscription_status': metadata['subscription_status'],
+          'subscription_expires': metadata['subscription_expires'],
+        };
+      }
+      
+      return null;
+    } catch (e) {
+      _logger.e('Error getting customer purchase source: $e', error: e, stackTrace: StackTrace.current);
+      return null;
+    }
+  
+  /// Find or create customer for user
   }
   
   /// Find or create customer for user

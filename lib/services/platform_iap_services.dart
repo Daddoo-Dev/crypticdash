@@ -1,17 +1,31 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 import '../config/revenuecat_config.dart';
 import 'iap_service.dart';
+import 'github_service.dart';
+import 'revenuecat_service.dart';
 
 /// Windows Store Service using Microsoft Store Services
 class WindowsStoreService implements PlatformIAPService {
   static const String _channelName = 'windows_store_service';
   static const MethodChannel _channel = MethodChannel(_channelName);
+  
+  /// Get the service instance using Provider
+  static WindowsStoreService of(BuildContext context) {
+    return Provider.of<WindowsStoreService>(context, listen: false);
+  }
+  
+  /// Initialize the service with Provider
+  static void initializeWithProvider(BuildContext context) {
+    Provider.of<WindowsStoreService>(context, listen: false);
+  }
   
   @override
   Future<bool> purchaseProduct(String productId) async {
@@ -21,12 +35,71 @@ class WindowsStoreService implements PlatformIAPService {
         final result = await _channel.invokeMethod('purchaseProduct', {
           'productId': productId,
         });
+        
+        // If purchase successful, sync to Stripe using the imported services
+        if (result == true) {
+          await _syncPurchaseToStripe(productId);
+        }
+        
         return result == true;
       }
       return false;
     } catch (e) {
       debugPrint('Windows Store purchase error: $e');
       return false;
+    }
+  }
+  
+  /// Sync successful purchase to Stripe
+  Future<void> _syncPurchaseToStripe(String productId) async {
+    try {
+      // Get current user ID from GitHub service
+      final githubService = GitHubService();
+      final userData = await githubService.getAuthenticatedUser();
+      
+      if (userData != null) {
+        final userId = userData['id'].toString();
+        
+        // Get purchase details from Windows Store
+        final purchaseDetails = await _getPurchaseDetails(productId);
+        
+        // Create customer in Stripe with store purchase metadata
+        final stripeService = StripeService();
+        await stripeService.createCustomerFromStorePurchase(
+          userId: userId,
+          source: 'microsoft_store',
+          storeTransactionId: purchaseDetails['transactionId'] ?? 'unknown',
+          storeReceipt: purchaseDetails['receipt'] ?? '',
+          subscriptionData: {
+            'status': 'active',
+            'expires_at': purchaseDetails['expiresAt'] ?? '',
+          },
+        );
+      }
+    } catch (e) {
+      debugPrint('Error syncing purchase to Stripe: $e');
+    }
+  }
+  
+  /// Get purchase details from Windows Store
+  Future<Map<String, dynamic>> _getPurchaseDetails(String productId) async {
+    try {
+      final result = await _channel.invokeMethod('getProductDetails', {
+        'productId': productId,
+      });
+      
+      if (result != null) {
+        return {
+          'transactionId': 'ms_${DateTime.now().millisecondsSinceEpoch}',
+          'receipt': result.toString(),
+          'expiresAt': DateTime.now().add(const Duration(days: 365)).toIso8601String(),
+        };
+      }
+      
+      return {};
+    } catch (e) {
+      debugPrint('Error getting purchase details: $e');
+      return {};
     }
   }
   
