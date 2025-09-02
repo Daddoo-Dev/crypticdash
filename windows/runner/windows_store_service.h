@@ -1,8 +1,6 @@
 #ifndef WINDOWS_STORE_SERVICE_H
 #define WINDOWS_STORE_SERVICE_H
 
-#include <flutter/method_channel.h>
-#include <flutter/plugin_registrar_windows.h>
 #include <windows.h>
 #include <memory>
 #include <string>
@@ -36,7 +34,7 @@ public:
     std::string GetProductDetails(const std::string& productId);
 
 private:
-    StoreContext m_storeContext;
+    StoreContext m_storeContext{nullptr};
     bool m_initialized;
 
     // Helper methods
@@ -44,6 +42,7 @@ private:
     std::string GetProductPrice(const StoreProduct& product);
     std::string GetProductDescription(const StoreProduct& product);
     std::string GetProductTitle(const StoreProduct& product);
+    std::string EscapeJsonString(const std::string& input);
 };
 
 #endif // WINDOWS_STORE_SERVICE_H

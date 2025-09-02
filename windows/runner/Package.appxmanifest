@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  IgnorableNamespaces="uap rescap desktop">
+
+  <Identity Name="CrypticDash"
+            Publisher="CN=A6FAD72B-D9F2-4055-84DB-579C22D9BAED"
+            Version="1.0.0.0" />
+
+  <Properties>
+    <DisplayName>CrypticDash</DisplayName>
+    <PublisherDisplayName>CrypticDash</PublisherDisplayName>
+    <Logo>resources\app_icon.png</Logo>
+    <Description>GitHub project management dashboard with AI-powered TODO generation</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="CrypticDash"
+        Square150x150Logo="resources\app_icon.png"
+        Square44x44Logo="resources\app_icon.png"
+        Description="GitHub project management dashboard with AI-powered TODO generation"
+        BackgroundColor="transparent">
+        <uap:DefaultTile Wide310x150Logo="resources\app_icon.png" />
+        <uap:SplashScreen Image="resources\app_icon.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+    <uap:Capability Name="userAccountInformation" />
+  </Capabilities>
+
+  <Extensions>
+    <uap:Extension Category="windows.appExecutionAlias">
+      <uap:AppExecutionAlias>
+        <desktop:ExecutionAlias AppId="App" />
+      </uap:AppExecutionAlias>
+    </uap:Extension>
+  </Extensions>
+
+</Package>

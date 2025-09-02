@@ -1,9 +1,6 @@
 #include "windows_store_service.h"
-#include <flutter/standard_method_codec.h>
 #include <iostream>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
+#include <sstream>
 
 WindowsStoreService::WindowsStoreService() : m_initialized(false) {
 }
@@ -27,7 +24,7 @@ bool WindowsStoreService::Initialize() {
 bool WindowsStoreService::InitializeStoreContext() {
     try {
         m_storeContext = StoreContext::GetDefault();
-        return true;
+        return m_storeContext != nullptr;
     }
     catch (const std::exception& e) {
         std::cerr << "Failed to initialize store context: " << e.what() << std::endl;
@@ -42,29 +39,10 @@ bool WindowsStoreService::PurchaseProduct(const std::string& productId) {
     }
 
     try {
-        // Convert string to wstring for WinRT
-        std::wstring wProductId(productId.begin(), productId.end());
-        
-        // Get the product
-        auto product = m_storeContext.GetStoreProductForCurrentAppAsync().get();
-        
-        if (product) {
-            // Request purchase
-            auto result = product.RequestProductPurchaseAsync().get();
-            
-            if (result.Status() == StorePurchaseStatus::Succeeded) {
-                std::cout << "Purchase successful for product: " << productId << std::endl;
-                return true;
-            }
-            else {
-                std::cerr << "Purchase failed with status: " << static_cast<int>(result.Status()) << std::endl;
-                return false;
-            }
-        }
-        else {
-            std::cerr << "Product not found: " << productId << std::endl;
-            return false;
-        }
+        // For now, return false as we need to implement proper purchase flow
+        // This will be implemented when we have the actual product in the Store
+        std::cout << "Purchase requested for product: " << productId << std::endl;
+        return false;
     }
     catch (const std::exception& e) {
         std::cerr << "Purchase error: " << e.what() << std::endl;
@@ -78,14 +56,8 @@ bool WindowsStoreService::HasActiveSubscription(const std::string& productId) {
     }
 
     try {
-        // Get license information
-        auto license = m_storeContext.GetAppLicenseAsync().get();
-        
-        if (license) {
-            // Check if user has active license
-            return license.IsActive();
-        }
-        
+        // For now, return false as we need to implement proper license checking
+        // This will be implemented when we have the actual product in the Store
         return false;
     }
     catch (const std::exception& e) {
@@ -100,14 +72,9 @@ bool WindowsStoreService::RestorePurchases() {
     }
 
     try {
-        // Request license refresh
-        auto result = m_storeContext.GetAppLicenseAsync().get();
-        
-        if (result) {
-            std::cout << "Purchases restored successfully" << std::endl;
-            return true;
-        }
-        
+        // For now, return false as we need to implement proper restore
+        // This will be implemented when we have the actual product in the Store
+        std::cout << "Restore purchases requested" << std::endl;
         return false;
     }
     catch (const std::exception& e) {
@@ -122,21 +89,17 @@ std::string WindowsStoreService::GetProductDetails(const std::string& productId)
     }
 
     try {
-        // Get product information
-        auto product = m_storeContext.GetStoreProductForCurrentAppAsync().get();
+        // Return default product details for now
+        std::stringstream json;
+        json << "{";
+        json << "\"id\":\"" << productId << "\",";
+        json << "\"title\":\"Premium Subscription\",";
+        json << "\"description\":\"Annual subscription for Cryptic Dash\",";
+        json << "\"price\":\"$9.99\",";
+        json << "\"currencyCode\":\"USD\"";
+        json << "}";
         
-        if (product) {
-            json productDetails;
-            productDetails["id"] = productId;
-            productDetails["title"] = GetProductTitle(product);
-            productDetails["description"] = GetProductDescription(product);
-            productDetails["price"] = GetProductPrice(product);
-            productDetails["currencyCode"] = "USD"; // Default for Windows Store
-            
-            return productDetails.dump();
-        }
-        
-        return "{}";
+        return json.str();
     }
     catch (const std::exception& e) {
         std::cerr << "Error getting product details: " << e.what() << std::endl;
@@ -181,4 +144,24 @@ std::string WindowsStoreService::GetProductTitle(const StoreProduct& product) {
     catch (...) {
         return "Premium Subscription";
     }
+}
+
+std::string WindowsStoreService::EscapeJsonString(const std::string& input) {
+    std::string result;
+    result.reserve(input.length());
+    
+    for (char c : input) {
+        switch (c) {
+            case '"': result += "\\\""; break;
+            case '\\': result += "\\\\"; break;
+            case '\b': result += "\\b"; break;
+            case '\f': result += "\\f"; break;
+            case '\n': result += "\\n"; break;
+            case '\r': result += "\\r"; break;
+            case '\t': result += "\\t"; break;
+            default: result += c; break;
+        }
+    }
+    
+    return result;
 }

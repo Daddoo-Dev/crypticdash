@@ -11,11 +11,10 @@ add_executable(${BINARY_NAME} WIN32
   "main.cpp"
   "utils.cpp"
   "win32_window.cpp"
-  "windows_store_service.cpp"
-  "windows_store_service_plugin.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
   "Runner.rc"
   "runner.exe.manifest"
+  "Package.appxmanifest"
 )
 
 # Apply the standard set of build settings. This can be removed for applications
@@ -37,9 +36,11 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 
-# Microsoft Store Services SDK
-find_package(Microsoft.Store.Services REQUIRED)
-target_link_libraries(${BINARY_NAME} PRIVATE Microsoft::Store.Services)
+# Microsoft Store Services SDK - Windows SDK 10.0.19041.0
+set(WINDOWS_SDK_VERSION "10.0.19041.0")
+set(WINDOWS_SDK_PATH "C:/Program Files (x86)/Windows Kits/10")
+include_directories("${WINDOWS_SDK_PATH}/Include/${WINDOWS_SDK_VERSION}/winrt")
+target_link_libraries(${BINARY_NAME} PRIVATE "${WINDOWS_SDK_PATH}/Lib/${WINDOWS_SDK_VERSION}/um/x64/WindowsApp.lib")
 
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
