@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/iap_service.dart';
 import '../services/repo_tracking_service.dart';
@@ -275,7 +276,30 @@ class SubscriptionWidget extends StatelessWidget {
         if (subscriptionInfo.status != SubscriptionStatus.premium) ...[
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: onUpgradePressed,
+              onPressed: () async {
+                bool success = false;
+                
+                if (Platform.isWindows) {
+                  // Use Windows Store Services SDK
+                  final iapService = IAPService();
+                  success = await iapService.purchasePremium();
+                } else {
+                  // Use platform-specific service for other platforms
+                  onUpgradePressed?.call();
+                  success = true; // Assume success for non-Windows platforms
+                }
+                
+                if (success && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(Platform.isWindows 
+                        ? 'Windows Store purchase initiated!' 
+                        : 'Purchase initiated!'),
+                      backgroundColor: colorScheme.primary,
+                    ),
+                  );
+                }
+              },
               icon: const Icon(Icons.upgrade),
               label: const Text('Upgrade to Premium'),
               style: ElevatedButton.styleFrom(

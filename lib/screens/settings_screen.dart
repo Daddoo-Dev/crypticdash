@@ -1,12 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/github_service.dart';
 import '../services/user_identity_service.dart';
-
 import '../services/project_selection_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/settings_service.dart';
+import '../services/iap_service.dart';
 import '../theme/app_themes.dart';
 import '../screens/help_screen.dart';
 
@@ -118,11 +119,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ElevatedButton(
                                   onPressed: () async {
                                     final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                    final success = await stripeService.purchasePremium();
+                                    bool success = false;
+                                    
+                                    if (Platform.isWindows) {
+                                      // Use Windows Store Services SDK
+                                      final iapService = IAPService();
+                                      success = await iapService.purchasePremium();
+                                    } else {
+                                      // Use Stripe for other platforms
+                                      success = await stripeService.purchasePremium();
+                                    }
+                                    
                                     if (success && mounted) {
                                       scaffoldMessenger.showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Checkout launched! Complete your purchase to upgrade.'),
+                                        SnackBar(
+                                          content: Text(Platform.isWindows 
+                                            ? 'Windows Store purchase initiated!' 
+                                            : 'Checkout launched! Complete your purchase to upgrade.'),
                                           backgroundColor: AppThemes.successGreen,
                                         ),
                                       );

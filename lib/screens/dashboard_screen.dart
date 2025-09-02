@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/project.dart';
@@ -14,6 +15,7 @@ import '../screens/project_detail_screen.dart'; // Added import for ProjectDetai
 import '../screens/settings_screen.dart'; // Added import for SettingsScreen
 import '../screens/help_screen.dart'; // Added import for HelpScreen
 import '../services/revenuecat_service.dart'; // Added import for RevenueCatSandboxService
+import '../services/iap_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -180,18 +182,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onPressed: () => _showHelp(context),
                 tooltip: 'Help & Support',
               ),
-              // Test Purchase Button
+              // Platform-specific Purchase Button
               Consumer<StripeService>(
                 builder: (context, stripeService, child) {
                   return ElevatedButton(
                     onPressed: () async {
                       final scaffoldMessenger = ScaffoldMessenger.of(context);
                       try {
-                        final success = await stripeService.purchasePremium();
+                        bool success = false;
+                        
+                        if (Platform.isWindows) {
+                          // Use Windows Store Services SDK
+                          final iapService = IAPService();
+                          success = await iapService.purchasePremium();
+                        } else {
+                          // Use Stripe for other platforms
+                          success = await stripeService.purchasePremium();
+                        }
+                        
                         if (success) {
                           scaffoldMessenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Premium purchase successful! Check Stripe dashboard.'),
+                            SnackBar(
+                              content: Text(Platform.isWindows 
+                                ? 'Windows Store purchase initiated!' 
+                                : 'Premium purchase successful! Check Stripe dashboard.'),
                               backgroundColor: Colors.green,
                             ),
                           );
@@ -218,7 +232,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       minimumSize: const Size(0, 32),
                     ),
-                    child: const Text('Test Purchase', style: TextStyle(fontSize: 12)),
+                    child: Text(Platform.isWindows ? 'Upgrade' : 'Test Purchase', 
+                              style: const TextStyle(fontSize: 12)),
                   );
                 },
               ),
